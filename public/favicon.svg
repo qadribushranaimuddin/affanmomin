@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="46" fill="#0A0A0A" stroke="#FF3E00" stroke-width="6" />
+  <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" font-family="'JetBrains Mono', 'Plus Jakarta Sans', monospace, sans-serif" font-weight="900" font-size="55" fill="#FFFFFF">A</text>
+  <circle cx="50" cy="78" r="5" fill="#FF3E00" />
+</svg>
