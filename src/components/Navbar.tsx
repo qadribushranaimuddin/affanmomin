@@ -53,6 +53,14 @@ interface NavbarProps {
 export default function Navbar({ activeSection, onNavigate, theme, onToggleTheme }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showLogoImage, setShowLogoImage] = useState(false);
+
+  useEffect(() => {
+    const logoInterval = setInterval(() => {
+      setShowLogoImage((prev) => !prev);
+    }, 7000);
+    return () => clearInterval(logoInterval);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,14 +113,53 @@ export default function Navbar({ activeSection, onNavigate, theme, onToggleTheme
         {/* Brand Logo */}
         <div 
           onClick={() => handleItemClick("hero")}
-          className="cursor-pointer flex flex-col items-start"
+          className="cursor-pointer flex items-center justify-start h-[36px] w-[160px] sm:w-[180px] select-none"
         >
-          <div className="text-sm font-black tracking-widest text-brand-text uppercase font-sans">
-            MOMIN AFFAN <span className="text-[#FF3E00]">/</span>
-          </div>
-          <div className="text-[9px] uppercase tracking-widest text-brand-muted font-mono leading-none mt-1">
-            Senior Graphic Designer
-          </div>
+          <AnimatePresence mode="wait">
+            {!showLogoImage ? (
+              <motion.div
+                key="text-logo"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3 }}
+                className="flex flex-col items-start"
+              >
+                <div className="text-sm font-black tracking-widest text-brand-text uppercase font-sans">
+                  MOMIN AFFAN <span className="text-[#FF3E00]">/</span>
+                </div>
+                <div className="text-[9px] uppercase tracking-widest text-brand-muted font-mono leading-none mt-1">
+                  Senior Graphic Designer
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="image-logo"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3 }}
+                className="flex items-center gap-2"
+              >
+                <div className="relative w-8 h-8 rounded-full border border-[#FF3E00]/30 bg-card-bg overflow-hidden flex items-end justify-center">
+                  <div className="absolute inset-0 bg-[radial-gradient(#1f1f1f_1px,transparent_1px)] [background-size:6px_6px] opacity-40" />
+                  <img 
+                    src="/Assets/affan.png" 
+                    alt="Affan Momin logo" 
+                    className="w-[90%] h-auto object-contain z-10"
+                  />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-[10px] font-mono tracking-widest uppercase text-white font-bold leading-none">
+                    MOMIN_AFFAN
+                  </span>
+                  <span className="text-[7.5px] font-mono text-[#FF3E00] uppercase tracking-wider mt-0.5 leading-none animate-pulse">
+                    [ ACTIVE_PROOF ]
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Desktop Navigation */}
@@ -186,13 +233,13 @@ export default function Navbar({ activeSection, onNavigate, theme, onToggleTheme
           >
             {theme === "dark" ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-[#FF3E00] shrink-0" />
-                <span className="leading-none text-[8px]">Day</span>
+                <Moon className="w-3.5 h-3.5 text-[#FF3E00] shrink-0" />
+                <span className="leading-none text-[8px]">Night</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-[#FF3E00] shrink-0" />
-                <span className="leading-none text-[8px]">Night</span>
+                <Sun className="w-3.5 h-3.5 text-[#FF3E00] shrink-0" />
+                <span className="leading-none text-[8px]">Day</span>
               </>
             )}
           </button>

@@ -272,7 +272,7 @@ export default function PortfolioShowcase() {
   };
 
   return (
-    <div className="py-12 border-b border-[#222]" id="portfolio-section">
+    <div className="py-6 border-b border-[#222]" id="portfolio-section">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div className="relative w-full md:w-auto">
           <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">Showcase</span>
@@ -402,11 +402,10 @@ export default function PortfolioShowcase() {
           })()}
         </div>
       </div>
-      {/* Project Spec Modal */}
       <AnimatePresence>
-        {activeProject && typeof document !== 'undefined' && createPortal(
+        {activeProject && (
           <div 
-            className="fixed inset-0 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+            className="fixed inset-0 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm theme-dark"
             style={{ zIndex: 9000 }}
           >
             <motion.div
@@ -505,8 +504,7 @@ export default function PortfolioShowcase() {
                 <span>ID: {activeProject.id.toUpperCase()}_REV2</span>
               </div>
             </motion.div>
-          </div>,
-          document.body
+          </div>
         )}
       </AnimatePresence>
     </div>

@@ -96,7 +96,7 @@ export default function WorkGallery() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [visibleCount, setVisibleCount] = useState<number>(12);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"grid" | "carousel" | "marquee" | "single">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "carousel" | "marquee" | "single">("marquee");
   const [carouselIndex, setCarouselIndex] = useState<number>(0);
   const [isZoomed, setIsZoomed] = useState<boolean>(false);
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -160,7 +160,7 @@ export default function WorkGallery() {
   };
 
   return (
-    <div className="py-16 border-b border-[#222]/80" id="gallery-section">
+    <div className="py-8 border-b border-[#222]/80" id="gallery-section">
       {/* Section Header */}
       <div className="flex flex-col xl:flex-row xl:items-end justify-between mb-10 gap-6">
         <div className="relative w-full xl:w-auto">
@@ -759,15 +759,14 @@ export default function WorkGallery() {
         </div>
       )}
 
-      {/* Lightbox Slider Modal */}
       <AnimatePresence>
-        {lightboxIndex !== null && typeof document !== 'undefined' && createPortal(
+        {lightboxIndex !== null && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeLightbox}
-            className="fixed inset-0 bg-[#060606]/96 backdrop-blur-xl flex flex-col justify-center items-center p-4 md:p-8 cursor-zoom-out"
+            className="fixed inset-0 bg-[#060606]/96 backdrop-blur-xl flex flex-col justify-center items-center p-4 md:p-8 cursor-zoom-out theme-dark"
             style={{ zIndex: 9000 }}
           >
             {/* Floating Glass Header (Left-aligned to prevent overlap with X button) */}
@@ -833,22 +832,14 @@ export default function WorkGallery() {
                   transition={{ duration: 0.22 }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {!loadedImages[filteredItems[lightboxIndex].id] && (
-                    <div className="absolute inset-0 flex items-center justify-center animate-pulse bg-white/[0.01] rounded-lg">
-                      <div className="w-8 h-8 rounded-full border border-white/10 border-t-[#FF3E00] animate-spin" />
-                    </div>
-                  )}
                   <img
                     src={filteredItems[lightboxIndex].src}
                     alt={filteredItems[lightboxIndex].alt}
-                    onLoad={() => setLoadedImages(prev => ({ ...prev, [filteredItems[lightboxIndex].id]: true }))}
                     className={`rounded-lg shadow-[0_24px_60px_rgba(0,0,0,0.85)] border border-white/5 bg-[#080808] transition-all duration-300 ${
                       isZoomed 
                         ? "max-w-[95vw] max-h-[92vh] object-contain cursor-zoom-out" 
                         : "max-w-[85vw] md:max-w-[75vw] max-h-[78vh] object-contain cursor-zoom-in"
-                    } ${
-                      loadedImages[filteredItems[lightboxIndex].id] ? "opacity-100 scale-100" : "opacity-0 scale-95"
-                    }`}
+                    } opacity-100 scale-100`}
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsZoomed(prev => !prev);
@@ -856,18 +847,16 @@ export default function WorkGallery() {
                   />
 
                   {/* Simple Close button (X icon) at the upper right edge of the image */}
-                  {loadedImages[filteredItems[lightboxIndex].id] && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        closeLightbox();
-                      }}
-                      className="absolute -top-3 -right-3 md:-top-4 md:-right-4 z-30 p-2.5 rounded-full border-2 border-white/30 bg-black/90 hover:bg-[#FF3E00] hover:text-white hover:border-[#FF3E00] text-[#FF3E00] hover:scale-105 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer flex items-center justify-center"
-                      title="Close"
-                    >
-                      <X className="w-4 h-4 stroke-[2.5]" />
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeLightbox();
+                    }}
+                    className="absolute -top-3 -right-3 md:-top-4 md:-right-4 z-30 p-2.5 rounded-full border-2 border-white/30 bg-black/90 hover:bg-[#FF3E00] hover:text-white hover:border-[#FF3E00] text-[#FF3E00] hover:scale-105 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer flex items-center justify-center"
+                    title="Close"
+                  >
+                    <X className="w-4 h-4 stroke-[2.5]" />
+                  </button>
                 </motion.div>
               </div>
  
@@ -902,8 +891,7 @@ export default function WorkGallery() {
                 <span>STATUS: PRESS READY // ARCHIVED OK</span>
               </div>
             </div>
-          </motion.div>,
-          document.body
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

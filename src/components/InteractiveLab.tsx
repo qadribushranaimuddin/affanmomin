@@ -61,7 +61,7 @@ export default function InteractiveLab() {
   };
 
   return (
-    <div className="py-16 border-b border-[#222]" id="lab-section">
+    <div className="py-8 border-b border-[#222]" id="lab-section">
       {/* Header Section */}
       <div className="mb-10">
         <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">

@@ -87,6 +87,7 @@ const LOCATION = "Bhiwandi, Dist. Thane - 421302, Maharashtra, India";
 export default function AboutSection() {
   const [activeTab, setActiveTab] = useState<"bio" | "education" | "hobbies">("bio");
   const [isMobile, setIsMobile] = useState(false);
+  const [showIdentityImage, setShowIdentityImage] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -122,7 +123,7 @@ export default function AboutSection() {
   return (
     <section
       id="about-section"
-      className="py-16 border-b border-[#222]"
+      className="py-8 border-b border-[#222]"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         
@@ -130,45 +131,99 @@ export default function AboutSection() {
         <ParallaxWrapper speed={0.05} className="lg:col-span-3 h-full">
           <div className="flex flex-col justify-between h-full space-y-8">
             <div>
-              <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">
-                // Core Identity
-              </span>
-              <h3 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
-                About<br />
-                Momin Affan
-              </h3>
-              
-              {/* Calibrated Lock-On Line */}
-              <div className="relative w-full pt-4 pb-1 overflow-hidden pointer-events-none select-none">
-                <motion.div 
-                  initial={{ scaleX: 0 }}
-                  whileInView={{ scaleX: 1 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="h-[1px] w-full bg-gradient-to-r from-[#FF3E00] via-card-border to-transparent origin-left border-t border-dashed border-[#FF3E00]/30"
-                />
-                <div className="absolute right-0 top-1.5 flex items-center space-x-1.5 font-mono text-[8px] text-[#A3A3A3] opacity-80">
-                  <motion.span 
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 0.7 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.4 }}
+            <motion.div
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(e, info) => {
+                const threshold = 30;
+                if (Math.abs(info.offset.x) > threshold) {
+                  setShowIdentityImage((prev) => !prev);
+                }
+              }}
+              className="cursor-grab active:cursor-grabbing select-none relative overflow-hidden rounded-lg p-2 border border-transparent hover:border-[#FF3E00]/10 transition-colors group"
+            >
+              <AnimatePresence mode="wait">
+                {!showIdentityImage ? (
+                  <motion.div
+                    key="text-identity"
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 15 }}
+                    transition={{ duration: 0.25 }}
                   >
-                    SEC_BIO_01
-                  </motion.span>
-                  <motion.div 
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                    className="w-1.5 h-1.5 bg-[#FF3E00]"
-                  />
-                </div>
-              </div>
+                    <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">
+                      // Core Identity
+                    </span>
+                    <h3 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
+                      About<br />
+                      Momin Affan
+                    </h3>
+                    
+                    {/* Calibrated Lock-On Line */}
+                    <div className="relative w-full pt-4 pb-1 overflow-hidden pointer-events-none select-none">
+                      <motion.div 
+                        initial={{ scaleX: 0 }}
+                        whileInView={{ scaleX: 1 }}
+                        viewport={{ once: true, margin: "-40px" }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="h-[1px] w-full bg-gradient-to-r from-[#FF3E00] via-card-border to-transparent origin-left border-t border-dashed border-[#FF3E00]/30"
+                      />
+                      <div className="absolute right-0 top-1.5 flex items-center space-x-1.5 font-mono text-[8px] text-[#A3A3A3] opacity-80">
+                        <motion.span 
+                          initial={{ opacity: 0 }}
+                          whileInView={{ opacity: 0.7 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          SEC_BIO_01
+                        </motion.span>
+                        <motion.div 
+                          initial={{ scale: 0 }}
+                          whileInView={{ scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                          className="w-1.5 h-1.5 bg-[#FF3E00]"
+                        />
+                      </div>
+                    </div>
 
-              <p className="mt-3 text-sm text-[#737373] leading-relaxed">
-                Based out of Bhiwandi, Thane, Momin is an artistic technician translating commercial requirements into rigorous graphic vectors.
-              </p>
+                    <p className="mt-3 text-sm text-[#737373] leading-relaxed">
+                      Based out of Bhiwandi, Thane, Momin is an artistic technician translating commercial requirements into rigorous graphic vectors.
+                    </p>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="image-identity"
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex flex-col items-center justify-center py-4 bg-[#0A0A0A]/40 border border-[#222] rounded-lg relative overflow-hidden"
+                  >
+                    {/* Technical Calibration Grid Underlay */}
+                    <div className="absolute inset-0 bg-[radial-gradient(#1f1f1f_1px,transparent_1px)] [background-size:12px_12px] opacity-35 z-0 pointer-events-none" />
+
+                    <div className="relative w-[180px] aspect-[4/5] flex items-end justify-center select-none z-10">
+                      <img 
+                        src="/Assets/affan.png" 
+                        alt="Affan Momin Portrait" 
+                        className="w-[90%] h-auto object-contain transition-all duration-300 filter contrast-[1.05]"
+                      />
+                    </div>
+                    
+                    <div className="mt-2 font-mono text-[8px] text-[#FF3E00] uppercase tracking-widest animate-pulse z-10">
+                      [ SEC_BIO_01_IMAGE ]
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Swipe prompt hint on hover */}
+              <div className="absolute bottom-1 right-2 font-mono text-[6px] text-[#444] uppercase pointer-events-none group-hover:text-[#FF3E00]/40 transition-colors">
+                ← Swipe to toggle →
+              </div>
+            </motion.div>
             </div>
 
             {/* Tab Selector Buttons - Bento Styling */}
@@ -245,7 +300,7 @@ export default function AboutSection() {
                     I am a passionate and dedicated Graphic Designer with robust expertise drafting complex graphic templates, logo systems, and packaging templates using CorelDRAW. I have delivered creative blueprints for advertising catalogs, large scale banners, flex setups, brochures, customized medal illustrations, and retail products labels.
                   </p>
                   <p className="text-sm text-[#737373] leading-relaxed max-w-3xl">
-                    By leveraging state-of-the-art artificial intelligence models (such as ChatGPT prompts drafting) into my traditional CorelDRAW and Photoshop processes, I cut pre-production mock times in half, enabling clients to test structures rapidly before triggering large-scale press runs.
+                    By leveraging state-of-the-art artificial intelligence models (such as ChatGPT prompts drafting) into my traditional CorelDRAW processes, I cut pre-production mock times in half, enabling clients to test structures rapidly before triggering large-scale press runs.
                   </p>
                 </div>
 

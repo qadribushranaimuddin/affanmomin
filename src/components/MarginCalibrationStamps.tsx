@@ -7,12 +7,6 @@ export default function MarginCalibrationStamps() {
       <div className="absolute top-[84px] left-1/2 -translate-x-1/2 flex items-center gap-12 font-mono text-[7px] text-gray-500/40 uppercase tracking-[0.2em]">
         <span>[ TRIM_LIMIT: 320mm / 480mm ]</span>
         
-        {/* CMYK Center Alignment Target */}
-        <div className="flex items-center gap-1 text-[#FF3E00]">
-          <Crosshair className="w-3.5 h-3.5 animate-spin shrink-0" style={{ animationDuration: '8s' }} />
-          <span>CENTER_REGISTER</span>
-        </div>
-        
         <span>[ SYS_PRESSURE: ACCURATE ]</span>
       </div>
 

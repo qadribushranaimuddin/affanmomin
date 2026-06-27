@@ -43,7 +43,7 @@ const EXPERIENCES: Experience[] = [
       "Maintaining, analyzing, and structuring client project records and billing indices using Microsoft Excel.",
       "Coordinating multiple clients simultaneously, ensuring strict adherence to strict project deadlines and color prepress configurations."
     ],
-    toolsUsed: ["CorelDRAW", "Adobe Photoshop", "Canva Pro", "Microsoft Excel", "Prepress Calibrations"]
+    toolsUsed: ["CorelDRAW", "Canva Pro", "Microsoft Excel", "Prepress Calibrations"]
   },
   {
     role: "Senior Graphic Designer",
@@ -57,7 +57,7 @@ const EXPERIENCES: Experience[] = [
       "Designed and generated weekly social media designs, handling visual assets across digital media platforms.",
       "Kept rigid, pristine aesthetic consistency across multiple herbal brands under the parent corporate system."
     ],
-    toolsUsed: ["CorelDRAW Style Guides", "Photoshop", "Print Offset Tuning", "Product Catalogues"]
+    toolsUsed: ["CorelDRAW Style Guides", "Print Offset Tuning", "Product Catalogues"]
   },
   {
     role: "Junior Graphic Designer",
@@ -67,11 +67,11 @@ const EXPERIENCES: Experience[] = [
     responsibilities: [
       "Vector-designed acrylic trophy shields, customizable medal items, and official executive presentation boxes.",
       "Created structured product catalogues, custom corporate customized presentations, and print-ready pamphlets.",
-      "Executed product photography in-house, isolated catalog items in Photoshop, and customized lighting profiles for digital lists.",
+      "Executed product photography in-house, isolated catalog items, and customized lighting profiles for digital lists.",
       "Logged and managed physical showroom-related records, pricing charts, and inventory databases in Excel.",
       "Supported visual merchandising, product placement displays, and initial material mockups."
     ],
-    toolsUsed: ["CorelDRAW Technical Vector", "Product Photography", "Photoshop Silhouette Isolation", "Inventory Excel Sheets"]
+    toolsUsed: ["CorelDRAW Technical Vector", "Product Photography", "Inventory Excel Sheets"]
   },
   {
     role: "Freelance Graphic Designer",
@@ -83,7 +83,7 @@ const EXPERIENCES: Experience[] = [
       "Delivered high-rated custom work for prominent clients: Bluewavepool, The Mini Melt, Chawla Remedies Pvt. Ltd., India Natural, Indian Walker, Blendloom, Homora, and local business councils.",
       "Specializing in Flex Banners, Apparel design, multi-page layout publication, and modern AI-augmented creative concepts."
     ],
-    toolsUsed: ["ChatGPT AI Ideation", "CorelDRAW Layouts", "Photoshop Compositing", "Canva Team Boards"]
+    toolsUsed: ["ChatGPT AI Ideation", "CorelDRAW Layouts", "Canva Team Boards"]
   }
 ];
 
@@ -95,7 +95,7 @@ export default function ExperienceTimeline() {
   };
 
   return (
-    <div className="py-12 border-b border-[#222]" id="experience-section">
+    <div className="py-6 border-b border-[#222]" id="experience-section">
       <div className="mb-8">
         <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">Timeline</span>
         <h2 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">

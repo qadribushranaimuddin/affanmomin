@@ -53,13 +53,13 @@ const TOOLS_SKILLS: Skill[] = [
     watermark: "CDR"
   },
   {
-    name: "Adobe Photoshop",
-    level: "Advanced Creative Compositor (90%)",
-    description: "Sizing high-res promotional imagery, pen-tool product silhouette isolation, professional lighting edits for trophy books.",
-    useCase: "Image backgrounds, color grading for flyers, herbal packaging illustrations, banner photography preparation.",
-    icon: "🎨",
-    percentage: 90,
-    watermark: "PSD"
+    name: "Microsoft Excel & Word",
+    level: "Data & Publication Structure (85%)",
+    description: "Coordinating detailed trophy catalogues, inventory databases, client project reports, billing files and written summaries.",
+    useCase: "Logging customized orders, storing client names, calculating bulk order quotes and billing summaries.",
+    icon: "📊",
+    percentage: 85,
+    watermark: "OFFICE"
   },
   {
     name: "ChatGPT (AI Design Workflows)",
@@ -80,13 +80,13 @@ const TOOLS_SKILLS: Skill[] = [
     watermark: "CANVA"
   },
   {
-    name: "Microsoft Excel & Word",
-    level: "Data & Publication Structure (85%)",
-    description: "Coordinating detailed trophy catalogues, inventory databases, client project reports, billing files and written summaries.",
-    useCase: "Logging customized orders, storing client names, calculating bulk order quotes and billing summaries.",
-    icon: "📊",
-    percentage: 85,
-    watermark: "OFFICE"
+    name: "Adobe Photoshop",
+    level: "Creative Compositor (50%)",
+    description: "Sizing high-res promotional imagery, pen-tool product silhouette isolation, professional lighting edits for trophy books.",
+    useCase: "Image backgrounds, color grading for flyers, herbal packaging illustrations, banner photography preparation.",
+    icon: "🎨",
+    percentage: 50,
+    watermark: "PSD"
   }
 ];
 
@@ -105,7 +105,7 @@ const GENERAL_EXPERTISE = [
 
 export default function SkillsGrid() {
   return (
-    <div className="py-12 border-b border-[#222]" id="skills-section">
+    <div className="py-6 border-b border-[#222]" id="skills-section">
       <div className="mb-8">
         <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">Toolbox</span>
         <h2 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">

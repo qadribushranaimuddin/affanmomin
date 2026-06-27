@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring, useScroll } from 'motion/react';
 import { 
   FolderGit, 
@@ -221,6 +221,21 @@ export default function App() {
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
   const [cursorHovered, setCursorHovered] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(false);
+
+  const footerParticles = useMemo(() => {
+    return Array.from({ length: 15 }).map((_, i) => {
+      const startX = Math.random() * 100;
+      return {
+        id: i,
+        size: Math.random() * 4 + 2,
+        delay: Math.random() * 5,
+        duration: Math.random() * 6 + 4,
+        startX: startX,
+        drift1: startX + (Math.random() * 10 - 5),
+        drift2: startX + (Math.random() * 10 - 5)
+      };
+    });
+  }, []);
 
   // Mouse trail tracker for the vector reticle scope
   useEffect(() => {
@@ -573,9 +588,8 @@ export default function App() {
       />
 
       {/* Main Structural Layout Container */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-28 lg:pt-36 relative z-10 space-y-12 pb-24">
+      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-28 lg:pt-36 relative z-10 space-y-6 pb-24">
         {/* Parallax Background Structural Annotations */}
-        <ParallaxGraphic topPosition="16%" side="left" speed={0.12} vibe="cmyk" />
         <ParallaxGraphic topPosition="36%" side="right" speed={-0.08} vibe="ruler" />
         <ParallaxGraphic topPosition="56%" side="left" speed={0.15} vibe="crosshair" />
         <ParallaxGraphic topPosition="76%" side="right" speed={-0.1} vibe="code" />
@@ -638,7 +652,7 @@ export default function App() {
               </p>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 <span className="text-[9px] font-mono px-2 py-0.5 bg-card-border text-white rounded">CorelDRAW</span>
-                <span className="text-[9px] font-mono px-2 py-0.5 bg-card-border text-white rounded">Photoshop</span>
+                <span className="text-[9px] font-mono px-2 py-0.5 bg-card-border text-white rounded">Canva Pro</span>
                 <span className="text-[9px] font-mono px-2 py-0.5 bg-card-border text-white rounded">AI Assisted</span>
               </div>
             </div>
@@ -778,44 +792,37 @@ export default function App() {
       <footer className="py-12 relative z-10 px-6 md:px-12 overflow-hidden shadow-[0_-8px_32px_rgba(0,0,0,0.15)] mt-16 bg-nav-bg border-t border-card-border transition-colors duration-300">
         {/* Animated Particles in Footer */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          {Array.from({ length: 15 }).map((_, i) => {
-            const size = Math.random() * 4 + 2; // 2px to 6px
-            const delay = Math.random() * 5;
-            const duration = Math.random() * 6 + 4; // 4s to 10s
-            const startX = Math.random() * 100; // 0% to 100%
-            
-            return (
-              <motion.div
-                key={`footer-particle-${i}`}
-                initial={{ 
-                  opacity: 0, 
-                  y: "110%", 
-                  x: `${startX}%` 
-                }}
-                animate={{ 
-                  opacity: [0, 0.4, 0.4, 0], 
-                  y: "-10%",
-                  x: [
-                    `${startX}%`, 
-                    `${startX + (Math.random() * 10 - 5)}%`, 
-                    `${startX + (Math.random() * 10 - 5)}%`
-                  ]
-                }}
-                transition={{
-                  duration: duration,
-                  repeat: Infinity,
-                  delay: delay,
-                  ease: "easeInOut"
-                }}
-                className="absolute bg-[#FF3E00] rounded-full"
-                style={{
-                  width: size,
-                  height: size,
-                  filter: "blur(0.5px)"
-                }}
-              />
-            );
-          })}
+          {footerParticles.map((p) => (
+            <motion.div
+              key={`footer-particle-${p.id}`}
+              initial={{ 
+                opacity: 0, 
+                y: "110%", 
+                x: `${p.startX}%` 
+              }}
+              animate={{ 
+                opacity: [0, 0.4, 0.4, 0], 
+                y: "-10%",
+                x: [
+                  `${p.startX}%`, 
+                  `${p.drift1}%`, 
+                  `${p.drift2}%`
+                ]
+              }}
+              transition={{
+                duration: p.duration,
+                repeat: Infinity,
+                delay: p.delay,
+                ease: "easeInOut"
+              }}
+              className="absolute bg-[#FF3E00] rounded-full"
+              style={{
+                width: p.size,
+                height: p.size,
+                filter: "blur(0.5px)"
+              }}
+            />
+          ))}
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 flex flex-col items-center justify-center space-y-6 text-center">
