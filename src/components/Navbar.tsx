@@ -50,6 +50,7 @@ interface NavbarProps {
   onToggleTheme: () => void;
   threeDStyle: string;
   onToggleThreeD: () => void;
+  onChangeThreeDStyle: (style: string) => void;
 }
 
 export default function Navbar({ 
@@ -58,7 +59,8 @@ export default function Navbar({
   theme, 
   onToggleTheme,
   threeDStyle,
-  onToggleThreeD
+  onToggleThreeD,
+  onChangeThreeDStyle
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -259,13 +261,45 @@ export default function Navbar({
           <button
             onClick={onToggleThreeD}
             className="flex items-center gap-1.5 cursor-pointer text-brand-text hover:text-[#FF3E00] transition-colors font-mono font-bold text-[9px] uppercase tracking-wider px-2.5 py-1.5 border border-card-border hover:border-[#FF3E00]/30 bg-card-bg/25 rounded-md h-max select-none shadow-sm ml-2"
-            title="Cycle 3D Background Experiences"
+            title="Toggle 3D Immersive Background"
           >
             <div className={`w-2 h-2 rounded-full shrink-0 ${threeDStyle !== "off" ? 'bg-[#FF3E00] animate-pulse' : 'bg-brand-muted/60'}`} />
-            <span className="leading-none text-[8px]">
-              {threeDStyle === "off" ? "3D: OFF" : `3D: ${threeDStyle.toUpperCase()}`}
-            </span>
+            <span className="leading-none text-[8px]">{threeDStyle !== "off" ? "3D: ON" : "3D: OFF"}</span>
           </button>
+
+          {/* Sub-menu showing style options when 3D is active */}
+          {threeDStyle !== "off" && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-1 bg-card-bg/10 border border-card-border/60 rounded-md p-0.5 ml-1.5"
+            >
+              {(["origami", "console", "highway", "blueprint", "typography", "hologram"] as const).map((style) => {
+                const isActive = threeDStyle === style;
+                const labels: Record<string, string> = {
+                  origami: "Origami",
+                  console: "Console",
+                  highway: "Highway",
+                  blueprint: "Blueprint",
+                  typography: "Typo",
+                  hologram: "Hologram"
+                };
+                return (
+                  <button
+                    key={style}
+                    onClick={() => onChangeThreeDStyle(style)}
+                    className={`cursor-pointer px-2 py-1 rounded-sm text-[8px] font-mono uppercase tracking-wider transition-colors ${
+                      isActive 
+                        ? "text-black bg-[#FF3E00] font-black" 
+                        : "text-brand-muted hover:text-brand-text"
+                    }`}
+                  >
+                    {labels[style]}
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
 
           <a
             href="/My Resume.pdf"
@@ -371,9 +405,46 @@ export default function Navbar({
                 onClick={onToggleThreeD}
                 className="flex items-center justify-between bg-card-bg/25 backdrop-blur-md border border-card-border text-brand-text font-mono font-bold uppercase tracking-wider px-4 py-3 mt-2 text-center rounded-sm shadow-sm cursor-pointer"
               >
-                <span>{threeDStyle === "off" ? "Cycle 3D Mode" : `3D: ${threeDStyle.toUpperCase()}`}</span>
-                <div className={`w-2.5 h-2.5 rounded-full ${threeDStyle !== "off" ? 'bg-[#FF3E00] animate-pulse' : 'bg-brand-muted/60'}`} />
+                <span>3D Backgrounds</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-brand-muted">{threeDStyle !== "off" ? "ON" : "OFF"}</span>
+                  <div className={`w-2.5 h-2.5 rounded-full ${threeDStyle !== "off" ? 'bg-[#FF3E00] animate-pulse' : 'bg-brand-muted/60'}`} />
+                </div>
               </button>
+
+              {/* Mobile 3D Style Selector List */}
+              {threeDStyle !== "off" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="grid grid-cols-2 gap-1.5 mt-1 border border-card-border/40 p-2 bg-card-bg/10 rounded-sm"
+                >
+                  {(["origami", "console", "highway", "blueprint", "typography", "hologram"] as const).map((style) => {
+                    const isActive = threeDStyle === style;
+                    const labels: Record<string, string> = {
+                      origami: "Origami",
+                      console: "Console",
+                      highway: "Highway",
+                      blueprint: "Blueprint",
+                      typography: "Typo",
+                      hologram: "Hologram"
+                    };
+                    return (
+                      <button
+                        key={style}
+                        onClick={() => onChangeThreeDStyle(style)}
+                        className={`cursor-pointer px-3 py-2 rounded-sm text-[9px] font-mono uppercase tracking-wider text-center transition-colors ${
+                          isActive 
+                            ? "text-black bg-[#FF3E00] font-black" 
+                            : "text-brand-muted border border-card-border/30 hover:text-brand-text bg-card-bg/20"
+                        }`}
+                      >
+                        {labels[style]}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
 
               {/* Mobile Download Resume Button */}
               <a

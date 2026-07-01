@@ -231,11 +231,12 @@ export default function App() {
     } catch (e) {}
   }, [threeDStyle]);
 
-  const toggleThreeDStyle = () => {
-    const styles = ["off", "origami", "console", "highway", "blueprint", "typography", "hologram"];
-    const currentIndex = styles.indexOf(threeDStyle);
-    const nextIndex = (currentIndex + 1) % styles.length;
-    setThreeDStyle(styles[nextIndex]);
+  const handleToggleThreeD = () => {
+    if (threeDStyle === "off") {
+      setThreeDStyle("origami");
+    } else {
+      setThreeDStyle("off");
+    }
   };
   const [activeSection, setActiveSection] = useState<string>('hero');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -607,7 +608,8 @@ export default function App() {
         theme={theme}
         onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
         threeDStyle={threeDStyle}
-        onToggleThreeD={toggleThreeDStyle}
+        onToggleThreeD={handleToggleThreeD}
+        onChangeThreeDStyle={setThreeDStyle}
       />
 
       {/* Main Structural Layout Container */}
