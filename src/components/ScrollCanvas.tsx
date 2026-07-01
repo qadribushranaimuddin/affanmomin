@@ -1200,6 +1200,10 @@ function CameraDirector({
       targetX = Math.sin(progress * Math.PI) * 0.4;
       targetY = 0;
       targetZ = 3.4;
+    } else if (style === "galaxy") {
+      targetX = 0;
+      targetY = 0;
+      targetZ = 3.5 - progress * 1.5;
     }
 
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX + pointer.x * 0.45, 0.025);
@@ -1236,6 +1240,89 @@ function DynamicStudioSpotlight() {
       shadow-mapSize-width={1024}
       shadow-mapSize-height={1024}
     />
+  );
+}
+
+function GalaxyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const smoothProgressRef = useRef(0);
+  const { viewport, pointer } = useThree();
+  const scale = Math.min(1.0, viewport.width / 4.8) * 0.95;
+
+  const starCount = 350;
+  const stars = useMemo(() => {
+    const particleColors = theme === "dark" 
+      ? ["#00ffcc", "#06b6d4", "#9333ea", "#3b82f6"] 
+      : ["#FF3E00", "#d97706", "#db2777", "#4f46e5"];
+      
+    return Array.from({ length: starCount }).map((_, i) => {
+      const arm = i % 2 === 0 ? 0 : Math.PI;
+      const distance = 0.3 + Math.random() * 3.8;
+      const angle = distance * 2.2 + arm;
+      const spreadX = (Math.random() - 0.5) * 0.25 * distance;
+      const spreadY = (Math.random() - 0.5) * 0.25 * distance;
+      const spreadZ = (Math.random() - 0.5) * 0.25 * distance;
+      
+      const speed = 0.15 + Math.random() * 0.25;
+      const color = particleColors[i % particleColors.length];
+
+      return {
+        x: Math.cos(angle) * distance + spreadX,
+        y: Math.sin(angle) * distance + spreadY,
+        z: spreadZ,
+        distance,
+        angle,
+        speed,
+        color
+      };
+    });
+  }, [starCount, theme]);
+
+  useFrame((state) => {
+    const target = scrollProgressRef.current;
+    const current = smoothProgressRef.current;
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
+    const progress = smoothProgressRef.current;
+
+    if (groupRef.current) {
+      const scrollSpin = progress * Math.PI * 1.5;
+      const timeSpin = state.clock.getElapsedTime() * 0.12;
+      groupRef.current.rotation.z = timeSpin + scrollSpin;
+      
+      // Dynamic camera parallax tilt
+      groupRef.current.rotation.x = 0.55 + pointer.y * 0.18;
+      groupRef.current.rotation.y = pointer.x * 0.18;
+    }
+  });
+
+  const progress = smoothProgressRef.current;
+  const coreColor = theme === "dark" ? "#00ffcc" : "#FF3E00";
+
+  return (
+    <group ref={groupRef} scale={[scale, scale, scale]} position={[0, 0, -3.2]}>
+      {/* Central Supermassive Star Core */}
+      <mesh>
+        <sphereGeometry args={[0.22, 16, 16]} />
+        <meshBasicMaterial color={coreColor} />
+      </mesh>
+      {/* Outer core glow ring */}
+      <mesh>
+        <ringGeometry args={[0.25, 0.32, 32]} />
+        <meshBasicMaterial color={coreColor} transparent opacity={0.4} />
+      </mesh>
+
+      {/* Orbiting star particles */}
+      {stars.map((star, idx) => {
+        return (
+          <group key={idx} position={[star.x, star.y, star.z]}>
+            <mesh>
+              <sphereGeometry args={[0.024, 6, 6]} />
+              <meshBasicMaterial color={star.color} transparent opacity={0.7} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
   );
 }
 
@@ -1287,6 +1374,10 @@ export default function ScrollCanvas({ theme, style }: { theme: "dark" | "light"
 
         {style === "hologram" && (
           <HologramScene scrollProgressRef={scrollProgressRef} scrollSpeedRef={scrollSpeedRef} theme={theme} />
+        )}
+
+        {style === "galaxy" && (
+          <GalaxyScene scrollProgressRef={scrollProgressRef} scrollSpeedRef={scrollSpeedRef} theme={theme} />
         )}
       </Canvas>
     </div>

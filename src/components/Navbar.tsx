@@ -288,7 +288,7 @@ export default function Navbar({
                     <div className="flex flex-col gap-1.5">
                       <span className="text-[9px] font-bold text-brand-muted uppercase">Experience Mode</span>
                       <div className="grid grid-cols-2 gap-1">
-                        {(["origami", "console", "highway", "blueprint", "typography", "hologram"] as const).map((style) => {
+                        {(["origami", "console", "highway", "blueprint", "typography", "hologram", "galaxy"] as const).map((style) => {
                           const isActive = threeDStyle === style;
                           const labels: Record<string, string> = {
                             origami: "Origami",
@@ -296,7 +296,8 @@ export default function Navbar({
                             highway: "Highway",
                             blueprint: "Blueprint",
                             typography: "Typo",
-                            hologram: "Hologram"
+                            hologram: "Hologram",
+                            galaxy: "Galaxy"
                           };
                           return (
                             <button
@@ -438,7 +439,7 @@ export default function Navbar({
                   animate={{ opacity: 1, height: "auto" }}
                   className="grid grid-cols-2 gap-1.5 mt-1 border border-card-border/40 p-2 bg-card-bg/10 rounded-sm"
                 >
-                  {(["origami", "console", "highway", "blueprint", "typography", "hologram"] as const).map((style) => {
+                  {(["origami", "console", "highway", "blueprint", "typography", "hologram", "galaxy"] as const).map((style) => {
                     const isActive = threeDStyle === style;
                     const labels: Record<string, string> = {
                       origami: "Origami",
@@ -446,7 +447,8 @@ export default function Navbar({
                       highway: "Highway",
                       blueprint: "Blueprint",
                       typography: "Typo",
-                      hologram: "Hologram"
+                      hologram: "Hologram",
+                      galaxy: "Galaxy"
                     };
                     return (
                       <button
