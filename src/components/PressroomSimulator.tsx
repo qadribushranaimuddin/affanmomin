@@ -8,6 +8,25 @@ export default function PressroomSimulator() {
   const [magentaKey, setMagentaKey] = useState<number>(45);
   const [yellowKey, setYellowKey] = useState<number>(75);
   const [keyBlackKey, setKeyBlackKey] = useState<number>(30);
+
+  const [cyanAngle, setCyanAngle] = useState<number>(15);
+  const [magentaAngle, setMagentaAngle] = useState<number>(75);
+  const [yellowAngle, setYellowAngle] = useState<number>(0);
+  const [blackAngle, setBlackAngle] = useState<number>(45);
+
+  const getHasMoire = () => {
+    const diffCM = Math.abs(cyanAngle - magentaAngle) % 90;
+    const diffCK = Math.abs(cyanAngle - blackAngle) % 90;
+    const diffMK = Math.abs(magentaAngle - blackAngle) % 90;
+
+    const minDiff = Math.min(
+      diffCM, 90 - diffCM,
+      diffCK, 90 - diffCK,
+      diffMK, 90 - diffMK
+    );
+    return minDiff < 15;
+  };
+  const hasMoire = getHasMoire();
   
   // Target values for calibration game
   const targetC = 80;
@@ -213,7 +232,90 @@ export default function PressroomSimulator() {
                   <span className="font-mono text-[8.5px] w-12 text-right">
                     {keyBlackKey > targetK + 4 ? "▼ Reduce" : keyBlackKey < targetK - 4 ? "▲ Raise" : "✓ Align"}
                   </span>
+              </div>
+            </div>
+
+            {/* CMYK Screen Angles Deck */}
+            <div className="border border-white/5 bg-[#111]/30 p-4 rounded-lg space-y-4">
+              <div className="flex justify-between items-center border-b border-[#222] pb-2">
+                <span className="font-mono text-[9px] text-[#A3A3A3] uppercase font-bold">
+                  // CMYK Screen Angles Deck
+                </span>
+                <span className={`font-mono text-[8px] px-1.5 py-0.5 uppercase ${
+                  hasMoire 
+                    ? "bg-[#FF3E00]/10 border border-[#FF3E00]/30 text-[#FF3E00] animate-pulse" 
+                    : "bg-[#00FF00]/10 border border-[#00FF00]/30 text-[#00FF00]"
+                }`}>
+                  {hasMoire ? "[ Moiré Mismatch ]" : "[ Angles Calibrated ]"}
+                </span>
+              </div>
+
+              <p className="text-[10px] text-[#737373] leading-relaxed">
+                Adjust screen rotation angles to avoid printing Moiré interference. Keep C/M/K screen angles at least 15° apart. (Standard offset print settings: C: 15°, M: 75°, Y: 0°, K: 45°).
+              </p>
+
+              {/* Cyan Angle */}
+              <div className="space-y-1">
+                <div className="flex justify-between font-mono text-[8.5px]">
+                  <span className="text-[#00FFFF] font-bold">CYAN SCREEN ANGLE</span>
+                  <span className="text-white">{cyanAngle}°</span>
                 </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={90}
+                  value={cyanAngle}
+                  onChange={(e) => setCyanAngle(parseInt(e.target.value))}
+                  className="w-full h-1 bg-[#1A1A1A] rounded-lg appearance-none cursor-pointer accent-[#00FFFF]"
+                />
+              </div>
+
+              {/* Magenta Angle */}
+              <div className="space-y-1">
+                <div className="flex justify-between font-mono text-[8.5px]">
+                  <span className="text-[#FF00FF] font-bold">MAGENTA SCREEN ANGLE</span>
+                  <span className="text-white">{magentaAngle}°</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={90}
+                  value={magentaAngle}
+                  onChange={(e) => setMagentaAngle(parseInt(e.target.value))}
+                  className="w-full h-1 bg-[#1A1A1A] rounded-lg appearance-none cursor-pointer accent-[#FF00FF]"
+                />
+              </div>
+
+              {/* Yellow Angle */}
+              <div className="space-y-1">
+                <div className="flex justify-between font-mono text-[8.5px]">
+                  <span className="text-[#FFFF00] font-bold">YELLOW SCREEN ANGLE</span>
+                  <span className="text-white">{yellowAngle}°</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={90}
+                  value={yellowAngle}
+                  onChange={(e) => setYellowAngle(parseInt(e.target.value))}
+                  className="w-full h-1 bg-[#1A1A1A] rounded-lg appearance-none cursor-pointer accent-[#FFFF00]"
+                />
+              </div>
+
+              {/* Black Angle */}
+              <div className="space-y-1">
+                <div className="flex justify-between font-mono text-[8.5px]">
+                  <span className="text-white font-bold">BLACK (KEY) SCREEN ANGLE</span>
+                  <span className="text-white">{blackAngle}°</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={90}
+                  value={blackAngle}
+                  onChange={(e) => setBlackAngle(parseInt(e.target.value))}
+                  className="w-full h-1 bg-[#1A1A1A] rounded-lg appearance-none cursor-pointer accent-[#A3A3A3]"
+                />
               </div>
             </div>
           </div>
@@ -347,16 +449,16 @@ export default function PressroomSimulator() {
               <div className="w-full h-full flex items-center justify-center relative bg-white">
                 <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
                   <defs>
-                    <pattern id="cyan-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(15)">
+                    <pattern id="cyan-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform={`rotate(${cyanAngle})`}>
                       <circle cx="6" cy="6" r={Math.max(0.5, (cyanKey / 100) * 4.5)} fill="#00FFFF" opacity="0.8" />
                     </pattern>
-                    <pattern id="magenta-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(75)">
+                    <pattern id="magenta-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform={`rotate(${magentaAngle})`}>
                       <circle cx="6" cy="6" r={Math.max(0.5, (magentaKey / 100) * 4.5)} fill="#FF00FF" opacity="0.8" />
                     </pattern>
-                    <pattern id="yellow-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
+                    <pattern id="yellow-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform={`rotate(${yellowAngle})`}>
                       <circle cx="6" cy="6" r={Math.max(0.5, (yellowKey / 100) * 4.5)} fill="#FFFF00" opacity="0.8" />
                     </pattern>
-                    <pattern id="black-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <pattern id="black-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform={`rotate(${blackAngle})`}>
                       <circle cx="6" cy="6" r={Math.max(0.5, (keyBlackKey / 100) * 4.5)} fill="#111111" opacity="0.85" />
                     </pattern>
                   </defs>
@@ -365,6 +467,16 @@ export default function PressroomSimulator() {
                   <rect width="100%" height="100%" fill="url(#magenta-dots)" />
                   <rect width="100%" height="100%" fill="url(#black-dots)" />
                 </svg>
+
+                {/* Moiré Ripple bands simulation */}
+                {hasMoire && (
+                  <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-center items-center bg-red-950/20 border border-red-500/25">
+                    <span className="bg-red-600/90 text-white font-mono text-[7px] px-1.5 py-0.5 rounded-[1px] animate-pulse font-bold tracking-widest uppercase select-none">
+                      ⚠️ Moiré Interference
+                    </span>
+                    <div className="absolute inset-0 opacity-[0.08] bg-[repeating-radial-gradient(circle_at_center,black_0px,black_8px,transparent_8px,transparent_16px)] pointer-events-none" />
+                  </div>
+                )}
 
                 {/* Floating Pocket Loupe Magnifier Circle */}
                 <div className="absolute w-24 h-24 rounded-full border-4 border-slate-700 bg-white shadow-2xl flex items-center justify-center overflow-hidden pointer-events-none scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-200 z-20">
