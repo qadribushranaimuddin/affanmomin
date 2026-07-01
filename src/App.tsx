@@ -219,9 +219,9 @@ export default function App() {
   }, [theme]);
   const [threeDActive, setThreeDActive] = useState<boolean>(() => {
     try {
-      return (localStorage.getItem("3d-active") !== "false");
+      return (localStorage.getItem("3d-active") === "true");
     } catch (e) {
-      return true;
+      return false;
     }
   });
 
@@ -964,7 +964,7 @@ export default function App() {
         </>
       )}
       <Analytics />
-      <ScrollCanvas theme={theme} />
+      {threeDActive && <ScrollCanvas theme={theme} />}
     </div>
   );
 }
