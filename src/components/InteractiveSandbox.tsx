@@ -152,6 +152,7 @@ export default function InteractiveSandbox() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeMode, setResizeMode] = useState<string | null>(null);
+  const [draggedNode, setDraggedNode] = useState<{ nodeIndex: number; handleType: 'anchor' | 'h1' | 'h2' } | null>(null);
 
   // Alignment Smart Snapping Lines
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number } | null>(null);
@@ -393,6 +394,36 @@ export default function InteractiveSandbox() {
         return el;
       }));
       setDragStart({ x: coords.x, y: coords.y });
+    } else if (activeTool === 'pen' && draggedNode) {
+      setPenNodes(prev => prev.map((node, idx) => {
+        if (idx !== draggedNode.nodeIndex) return node;
+        
+        if (draggedNode.handleType === 'anchor') {
+          const deltaX = coords.x - node.x;
+          const deltaY = coords.y - node.y;
+          return {
+            x: coords.x,
+            y: coords.y,
+            h1x: node.h1x + deltaX,
+            h1y: node.h1y + deltaY,
+            h2x: node.h2x + deltaX,
+            h2y: node.h2y + deltaY
+          };
+        } else if (draggedNode.handleType === 'h1') {
+          return {
+            ...node,
+            h1x: coords.x,
+            h1y: coords.y
+          };
+        } else if (draggedNode.handleType === 'h2') {
+          return {
+            ...node,
+            h2x: coords.x,
+            h2y: coords.y
+          };
+        }
+        return node;
+      }));
     }
   };
 
@@ -400,6 +431,7 @@ export default function InteractiveSandbox() {
     setIsDragging(false);
     setResizeMode(null);
     setSnapLines(null);
+    setDraggedNode(null);
   };
 
   // Pen tool anchor placements
@@ -937,10 +969,42 @@ export default function InteractiveSandbox() {
                   <line x1={node.x} y1={node.y} x2={node.h2x} y2={node.h2y} stroke="#9333ea" strokeWidth="0.8" />
                   
                   {/* Anchor Point node */}
-                  <circle cx={node.x} cy={node.y} r="4" fill="#FF3E00" stroke="#ffffff" strokeWidth="1" />
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r="5"
+                    fill="#FF3E00"
+                    stroke="#ffffff"
+                    strokeWidth="1.5"
+                    className="cursor-move"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setDraggedNode({ nodeIndex: idx, handleType: 'anchor' });
+                    }}
+                  />
                   {/* Handles */}
-                  <circle cx={node.h1x} cy={node.h1y} r="3" fill="#9333ea" />
-                  <circle cx={node.h2x} cy={node.h2y} r="3" fill="#9333ea" />
+                  <circle
+                    cx={node.h1x}
+                    cy={node.h1y}
+                    r="4"
+                    fill="#9333ea"
+                    className="cursor-move"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setDraggedNode({ nodeIndex: idx, handleType: 'h1' });
+                    }}
+                  />
+                  <circle
+                    cx={node.h2x}
+                    cy={node.h2y}
+                    r="4"
+                    fill="#9333ea"
+                    className="cursor-move"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setDraggedNode({ nodeIndex: idx, handleType: 'h2' });
+                    }}
+                  />
                 </g>
               ))}
             </svg>
