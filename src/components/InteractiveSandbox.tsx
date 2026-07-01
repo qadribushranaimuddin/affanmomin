@@ -1,511 +1,1078 @@
-import { useState } from "react";
-import { Sparkles, RefreshCw, Compass, Copy, Check, Grid, Layers, ShieldCheck } from "lucide-react";
+import { useState, useRef, useMemo, useEffect } from "react";
+import { 
+  Sparkles, 
+  Trash2, 
+  Lock, 
+  Unlock, 
+  Eye, 
+  EyeOff, 
+  ChevronUp, 
+  ChevronDown, 
+  Download, 
+  Type, 
+  Shapes, 
+  PenTool, 
+  FileCheck, 
+  Plus, 
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+  Undo
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
-type MockupType = "card" | "letterhead" | "tag" | "acrylic";
+interface CanvasElement {
+  id: string;
+  type: 'text' | 'icon' | 'shape' | 'path';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  content: string; // text string, or shape name ('helix', 'star', 'divider')
+  color: string;
+  strokeColor: string;
+  strokeWidth: number;
+  fontSize: number;
+  letterSpacing: number;
+  fontFamily: string;
+  isLocked: boolean;
+  isHidden: boolean;
+}
+
+interface PathNode {
+  x: number;
+  y: number;
+  h1x: number; // control handle 1
+  h1y: number;
+  h2x: number; // control handle 2
+  h2y: number;
+}
 
 export default function InteractiveSandbox() {
-  const [brandName, setBrandName] = useState("VIBE-LAB");
-  const [vibe, setVibe] = useState<"Brutalist" | "Minimal" | "Herbal" | "Trophy">("Brutalist");
-  const [colorScheme, setColorScheme] = useState<string>("#FF3E00");
-  const [copied, setCopied] = useState(false);
-
-  const [selectedIcon, setSelectedIcon] = useState<"helix" | "compass" | "crest" | "shield" | "clover" | "trigrid">("helix");
-  const [showVectorGuides, setShowVectorGuides] = useState<boolean>(false);
-  const [activeMockupType, setActiveMockupType] = useState<MockupType>("card");
-
-  const vibePresets = [
-    { id: "Brutalist", label: "Brutalist Tech", desc: "Heavy uppercase layout, thick high-contrast grids, technical telemetry." },
-    { id: "Minimal", label: "Cosmic Minimal", desc: "Elegant spacious hierarchy, fine-line layout, centered identity focus." },
-    { id: "Herbal", label: "Ayurvedic Botanical", desc: "Soft frame borders, technical regulatory layout, wellness alignments." },
-    { id: "Trophy", label: "Laser Trophy Medal", desc: "Precision curved alignment guide, double borders, engraving parameters." },
-  ] as const;
-
+  // Preset brand assets
   const colorPresets = [
     { name: "Orange Volt", hex: "#FF3E00" },
     { name: "Oceanic Cyan", hex: "#06b6d4" },
     { name: "Amber Ochre", hex: "#f59e0b" },
-    { name: "Trophy Gold", hex: "#fbbf24" },
     { name: "Cyber Fuchsia", hex: "#ec4899" },
+    { name: "Emerald Mint", hex: "#10b981" },
   ];
 
-  const renderIcon = (className: string = "w-6 h-6") => {
-    switch (selectedIcon) {
-      case "helix":
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4.5 16.5c-1.5-1.25-2.5-3.5-2.5-6 0-4.5 4-8 8.5-8s8.5 3.5 8.5 8c0 2.5-1 4.75-2.5 6" />
-            <path d="M12 10a2.5 2.5 0 0 1 2.5 2.5c0 1.5-.75 2.5-2.5 3.5-1.75-1-2.5-2-2.5-3.5A2.5 2.5 0 0 1 12 10z" />
-            <path d="M8 14.5c2 1 4 1 6 0" />
-          </svg>
-        );
-      case "compass":
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-          </svg>
-        );
-      case "crest":
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            <path d="M12 8v8" />
-            <path d="M9 12h6" />
-          </svg>
-        );
-      case "shield":
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            <circle cx="12" cy="11" r="3" />
-          </svg>
-        );
-      case "clover":
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 12c-2-2-4-2-4 0s2 4 4 4 4-2 4-4-2-2-4 0z" />
-            <path d="M12 12c2-2 2-4 0-4s-4 2-4 4 2 4 4 4-2-2-4-0z" />
-            <path d="M12 12c2 2 4 2 4 0s-2-4-4-4-4 2-4 4 2 2 4-0z" />
-            <path d="M12 12c-2 2-2 4 0 4s4-2 4-4-2-4-4-4 2 2 4 0z" />
-          </svg>
-        );
-      case "trigrid":
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="12 2 22 8.5 22 20 12 13.5 2 20 2 8.5 12 2" />
-            <line x1="12" y1="13.5" x2="12" y2="22" />
-          </svg>
-        );
+  const fontPresets = [
+    { name: "Plus Jakarta", value: "'Plus Jakarta Sans', sans-serif" },
+    { name: "JetBrains Mono", value: "'JetBrains Mono', monospace" },
+    { name: "Georgia Serif", value: "Georgia, serif" },
+    { name: "System Brutalist", value: "system-ui, sans-serif" }
+  ];
+
+  // Default Canvas Elements
+  const [elements, setElements] = useState<CanvasElement[]>([
+    {
+      id: "bg-frame",
+      type: "shape",
+      content: "border-frame",
+      x: 10,
+      y: 10,
+      width: 380,
+      height: 230,
+      rotation: 0,
+      color: "transparent",
+      strokeColor: "#FF3E00",
+      strokeWidth: 2,
+      fontSize: 12,
+      letterSpacing: 0,
+      fontFamily: "'JetBrains Mono', monospace",
+      isLocked: true,
+      isHidden: false
+    },
+    {
+      id: "brand-logo",
+      type: "icon",
+      content: "helix",
+      x: 175,
+      y: 40,
+      width: 50,
+      height: 50,
+      rotation: 0,
+      color: "#FF3E00",
+      strokeColor: "transparent",
+      strokeWidth: 0,
+      fontSize: 12,
+      letterSpacing: 0,
+      fontFamily: "'Plus Jakarta Sans', sans-serif",
+      isLocked: false,
+      isHidden: false
+    },
+    {
+      id: "brand-title",
+      type: "text",
+      content: "VIBE-LAB",
+      x: 120,
+      y: 110,
+      width: 160,
+      height: 40,
+      rotation: 0,
+      color: "#FFFFFF",
+      strokeColor: "transparent",
+      strokeWidth: 0,
+      fontSize: 26,
+      letterSpacing: 4,
+      fontFamily: "'Plus Jakarta Sans', sans-serif",
+      isLocked: false,
+      isHidden: false
+    },
+    {
+      id: "brand-subtitle",
+      type: "text",
+      content: "ESTD 2026 // PACKAGING UNIT",
+      x: 90,
+      y: 165,
+      width: 220,
+      height: 20,
+      rotation: 0,
+      color: "#A3A3A3",
+      strokeColor: "transparent",
+      strokeWidth: 0,
+      fontSize: 9,
+      letterSpacing: 2,
+      fontFamily: "'JetBrains Mono', monospace",
+      isLocked: false,
+      isHidden: false
+    }
+  ]);
+
+  // Vector drawn nodes state (Pen Tool)
+  const [penNodes, setPenNodes] = useState<PathNode[]>([]);
+  const [activeTool, setActiveTool] = useState<'select' | 'pen'>('select');
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  
+  // Dragging states
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [resizeMode, setResizeMode] = useState<string | null>(null);
+
+  // Alignment Smart Snapping Lines
+  const [snapLines, setSnapLines] = useState<{ x?: number; y?: number } | null>(null);
+
+  const canvasRef = useRef<SVGSVGElement>(null);
+  const canvasWidth = 400;
+  const canvasHeight = 250;
+  const safeMargin = 20; // 20px Bleed Margin boundary
+
+  // Pre-flight inspector safety checks
+  const preFlightReport = useMemo(() => {
+    const alerts: string[] = [];
+    elements.forEach(el => {
+      if (el.isHidden) return;
+      // Bleed safety check: Elements close to outer canvas bounds
+      const leftBound = el.x;
+      const rightBound = el.x + el.width;
+      const topBound = el.y;
+      const bottomBound = el.y + el.height;
+
+      if (
+        leftBound < safeMargin || 
+        rightBound > canvasWidth - safeMargin || 
+        topBound < safeMargin || 
+        bottomBound > canvasHeight - safeMargin
+      ) {
+        if (el.id !== "bg-frame") {
+          alerts.push(`⚠️ ${el.id.toUpperCase()} is in the bleed cutoff zone.`);
+        }
+      }
+    });
+
+    if (penNodes.length > 0) {
+      penNodes.forEach((node, idx) => {
+        if (
+          node.x < safeMargin || node.x > canvasWidth - safeMargin ||
+          node.y < safeMargin || node.y > canvasHeight - safeMargin
+        ) {
+          alerts.push(`⚠️ Pen Point Node ${idx + 1} is in the bleed zone.`);
+        }
+      });
+    }
+
+    return {
+      safetyScore: Math.max(0, 100 - alerts.length * 15),
+      alerts,
+      readyForPrint: alerts.length === 0
+    };
+  }, [elements, penNodes]);
+
+  // SVG uploads parser
+  const handleSVGUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const newElement: CanvasElement = {
+        id: `uploaded-${Date.now()}`,
+        type: 'shape',
+        content: `custom-svg:${btoa(text)}`, // Encode source SVG to base64
+        x: 100,
+        y: 100,
+        width: 80,
+        height: 80,
+        rotation: 0,
+        color: "#FF3E00",
+        strokeColor: "transparent",
+        strokeWidth: 0,
+        fontSize: 12,
+        letterSpacing: 0,
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        isLocked: false,
+        isHidden: false
+      };
+      setElements(prev => [...prev, newElement]);
+      setSelectedElementId(newElement.id);
+    };
+    reader.readAsText(file);
+  };
+
+  // Helper to add standard design assets
+  const addAsset = (type: 'badge' | 'divider' | 'crest-frame' | 'star' | 'title-tag') => {
+    const newAsset: CanvasElement = {
+      id: `asset-${type}-${Date.now()}`,
+      type: 'shape',
+      content: type,
+      x: 150,
+      y: 90,
+      width: type === 'divider' ? 150 : 60,
+      height: type === 'divider' ? 10 : 60,
+      rotation: 0,
+      color: "transparent",
+      strokeColor: "#FF3E00",
+      strokeWidth: 1.5,
+      fontSize: 12,
+      letterSpacing: 0,
+      fontFamily: "'Plus Jakarta Sans', sans-serif",
+      isLocked: false,
+      isHidden: false
+    };
+    setElements(prev => [...prev, newAsset]);
+    setSelectedElementId(newAsset.id);
+  };
+
+  // Add custom text layer
+  const addTextElement = () => {
+    const newText: CanvasElement = {
+      id: `text-${Date.now()}`,
+      type: 'text',
+      content: "EDITABLE LAYOUT TEXT",
+      x: 100,
+      y: 120,
+      width: 200,
+      height: 30,
+      rotation: 0,
+      color: "#FFFFFF",
+      strokeColor: "transparent",
+      strokeWidth: 0,
+      fontSize: 12,
+      letterSpacing: 1,
+      fontFamily: "'JetBrains Mono', monospace",
+      isLocked: false,
+      isHidden: false
+    };
+    setElements(prev => [...prev, newText]);
+    setSelectedElementId(newText.id);
+  };
+
+  // Object manager arrangement functions
+  const deleteElement = (id: string) => {
+    setElements(prev => prev.filter(el => el.id !== id));
+    if (selectedElementId === id) setSelectedElementId(null);
+  };
+
+  const toggleLock = (id: string) => {
+    setElements(prev => prev.map(el => el.id === id ? { ...el, isLocked: !el.isLocked } : el));
+  };
+
+  const toggleHide = (id: string) => {
+    setElements(prev => prev.map(el => el.id === id ? { ...el, isHidden: !el.isHidden } : el));
+  };
+
+  const arrangeLayer = (id: string, direction: 'front' | 'back') => {
+    const idx = elements.findIndex(el => el.id === id);
+    if (idx === -1) return;
+    const newElements = [...elements];
+    const item = newElements.splice(idx, 1)[0];
+    if (direction === 'front') {
+      newElements.push(item);
+    } else {
+      newElements.unshift(item);
+    }
+    setElements(newElements);
+  };
+
+  // Canvas interactive mouse coordinates parser
+  const getCoordinates = (e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    // Map bounding rect to native 400x250 SVG viewport coordinates
+    return {
+      x: Math.round(((clientX - rect.left) / rect.width) * canvasWidth),
+      y: Math.round(((clientY - rect.top) / rect.height) * canvasHeight)
+    };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>, elId: string, handleType?: string) => {
+    const target = elements.find(el => el.id === elId);
+    if (!target || target.isLocked) return;
+    
+    e.stopPropagation();
+    setSelectedElementId(elId);
+
+    const coords = getCoordinates(e);
+
+    if (handleType) {
+      // Resize handle action
+      setResizeMode(handleType);
+      setDragStart({ x: coords.x, y: coords.y });
+    } else {
+      // Direct drag move action
+      setIsDragging(true);
+      setDragOffset({
+        x: coords.x - target.x,
+        y: coords.y - target.y
+      });
     }
   };
 
-  const handleCopySpec = () => {
-    const spec = `Brand: ${brandName}\nStyle Preset: ${vibe}\nColor Accent: ${colorScheme}\nRendered via Momin Affan Designer Sandbox — 2026`;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(spec).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        }).catch(() => {
-          fallbackCopyText(spec);
-        });
-      } else {
-        fallbackCopyText(spec);
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const coords = getCoordinates(e);
+
+    if (isDragging && selectedElementId) {
+      let newX = coords.x - dragOffset.x;
+      let newY = coords.y - dragOffset.y;
+
+      // Smart alignment guidelines & snapping (Canva/Corel style)
+      let snapX: number | undefined = undefined;
+      let snapY: number | undefined = undefined;
+
+      const targetCenterX = canvasWidth / 2;
+      const targetCenterY = canvasHeight / 2;
+
+      // Center snap check
+      if (Math.abs((newX + elements.find(el => el.id === selectedElementId)!.width / 2) - targetCenterX) < 6) {
+        newX = targetCenterX - elements.find(el => el.id === selectedElementId)!.width / 2;
+        snapX = targetCenterX;
       }
-    } catch (_) {
-      fallbackCopyText(spec);
+      if (Math.abs((newY + elements.find(el => el.id === selectedElementId)!.height / 2) - targetCenterY) < 6) {
+        newY = targetCenterY - elements.find(el => el.id === selectedElementId)!.height / 2;
+        snapY = targetCenterY;
+      }
+
+      setSnapLines(snapX || snapY ? { x: snapX, y: snapY } : null);
+
+      setElements(prev => prev.map(el => 
+        el.id === selectedElementId 
+          ? { ...el, x: newX, y: newY }
+          : el
+      ));
+    } else if (resizeMode && selectedElementId) {
+      const deltaX = coords.x - dragStart.x;
+      const deltaY = coords.y - dragStart.y;
+      
+      setElements(prev => prev.map(el => {
+        if (el.id !== selectedElementId) return el;
+        
+        if (resizeMode === "bottom-right") {
+          return {
+            ...el,
+            width: Math.max(10, el.width + deltaX),
+            height: Math.max(10, el.height + deltaY)
+          };
+        }
+        return el;
+      }));
+      setDragStart({ x: coords.x, y: coords.y });
     }
   };
 
-  const fallbackCopyText = (text: string) => {
-    try {
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.top = "0";
-      textArea.style.left = "0";
-      textArea.style.position = "fixed";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      const successful = document.execCommand("copy");
-      document.body.removeChild(textArea);
-      if (successful) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    } catch (err) {
-      console.warn("Unable to copy to clipboard", err);
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setResizeMode(null);
+    setSnapLines(null);
+  };
+
+  // Pen tool anchor placements
+  const handlePenCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (activeTool !== 'pen') return;
+    const coords = getCoordinates(e);
+    
+    // Add point with control handles centered on point by default
+    const newNode: PathNode = {
+      x: coords.x,
+      y: coords.y,
+      h1x: coords.x - 20,
+      h1y: coords.y,
+      h2x: coords.x + 20,
+      h2y: coords.y
+    };
+    setPenNodes(prev => [...prev, newNode]);
+  };
+
+  const resetPenDrawing = () => {
+    setPenNodes([]);
+  };
+
+  // Build Pen path data
+  const penPathD = useMemo(() => {
+    if (penNodes.length === 0) return "";
+    let d = `M ${penNodes[0].x} ${penNodes[0].y}`;
+    for (let i = 1; i < penNodes.length; i++) {
+      const prev = penNodes[i - 1];
+      const curr = penNodes[i];
+      d += ` C ${prev.h2x} ${prev.h2y}, ${curr.h1x} ${curr.h1y}, ${curr.x} ${curr.y}`;
     }
+    return d;
+  }, [penNodes]);
+
+  // Export Scalable Vector Graphics File
+  const handleExportSVG = () => {
+    if (!canvasRef.current) return;
+    
+    // Clone node to export cleanly
+    const svgClone = canvasRef.current.cloneNode(true) as SVGSVGElement;
+    
+    // Remove active select handles
+    const selectionFrame = svgClone.querySelector(".selection-frame");
+    if (selectionFrame) selectionFrame.remove();
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgClone);
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "momin_affan_design_layout.svg";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export mock high-resolution print PDF with crop marks
+  const handleExportPDF = () => {
+    // Generate a file download for a vector SVG with crop marks and metadata formatted for print pre-flight
+    if (!canvasRef.current) return;
+    
+    const cropMarkSVG = `
+      <svg width="500" height="350" viewBox="0 0 500 350" xmlns="http://www.w3.org/2000/svg">
+        <!-- Crop Marks -->
+        <line x1="50" y1="20" x2="50" y2="40" stroke="#FF3E00" stroke-width="1.5" />
+        <line x1="20" y1="50" x2="40" y2="50" stroke="#FF3E00" stroke-width="1.5" />
+        <line x1="450" y1="20" x2="450" y2="40" stroke="#FF3E00" stroke-width="1.5" />
+        <line x1="460" y1="50" x2="480" y2="50" stroke="#FF3E00" stroke-width="1.5" />
+        
+        <!-- Nested Canvas design at offset 50,50 -->
+        <g transform="translate(50, 50)">
+          ${canvasRef.current.innerHTML}
+        </g>
+        
+        <!-- Registration marks -->
+        <circle cx="250" cy="25" r="10" fill="none" stroke="#FF3E00" stroke-width="1.5" />
+        <line x1="250" y1="10" x2="250" y2="40" stroke="#FF3E00" stroke-width="1" />
+        <line x1="235" y1="25" x2="265" y2="25" stroke="#FF3E00" stroke-width="1" />
+        
+        <text x="250" y="340" font-family="monospace" font-size="8" fill="#888888" text-anchor="middle">
+          MOMIN_AFFAN_VECTOR_PRINT_PLATE // CMYK COLOR BOUNDARIES // OK
+        </text>
+      </svg>
+    `;
+    const blob = new Blob([cropMarkSVG], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "momin_affan_print_layout_proof.svg";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const selectedElement = elements.find(el => el.id === selectedElementId);
+
+  // Render SVG element inside sandbox
+  const renderSVGElement = (el: CanvasElement) => {
+    if (el.isHidden) return null;
+
+    if (el.type === 'text') {
+      return (
+        <g key={el.id} transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`}>
+          <text
+            x={0}
+            y={el.height - 10}
+            fill={el.color}
+            fontSize={el.fontSize}
+            fontFamily={el.fontFamily}
+            letterSpacing={el.letterSpacing}
+            className="select-none font-bold"
+            onMouseDown={(e) => handleMouseDown(e, el.id)}
+          >
+            {el.content}
+          </text>
+        </g>
+      );
+    }
+
+    if (el.type === 'icon') {
+      return (
+        <g 
+          key={el.id} 
+          transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`}
+          onMouseDown={(e) => handleMouseDown(e, el.id)}
+        >
+          {/* Custom vector preset helix logo */}
+          <path d="M10 20 C10 8, 30 8, 30 20 S50 32, 50 20" fill="none" stroke={el.color} strokeWidth="3.5" strokeLinecap="round" />
+          <circle cx="20" cy="15" r="3" fill="#ffffff" />
+          <circle cx="40" cy="25" r="3" fill="#ffffff" />
+        </g>
+      );
+    }
+
+    if (el.type === 'shape') {
+      // Decode uploaded SVG, or draw library shapes
+      if (el.content.startsWith("custom-svg:")) {
+        const decoded = atob(el.content.split(":")[1]);
+        return (
+          <g 
+            key={el.id} 
+            transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`}
+            onMouseDown={(e) => handleMouseDown(e, el.id)}
+            dangerouslySetInnerHTML={{ __html: decoded }}
+          />
+        );
+      }
+
+      if (el.content === "border-frame") {
+        return (
+          <rect
+            key={el.id}
+            x={el.x}
+            y={el.y}
+            width={el.width}
+            height={el.height}
+            fill={el.color}
+            stroke={el.strokeColor}
+            strokeWidth={el.strokeWidth}
+            onMouseDown={(e) => handleMouseDown(e, el.id)}
+          />
+        );
+      }
+
+      if (el.content === "badge") {
+        return (
+          <polygon
+            key={el.id}
+            points={`${el.x},${el.y + el.height / 2} ${el.x + el.width / 4},${el.y} ${el.x + (el.width * 3) / 4},${el.y} ${el.x + el.width},${el.y + el.height / 2} ${el.x + (el.width * 3) / 4},${el.y + el.height} ${el.x + el.width / 4},${el.y + el.height}`}
+            fill={el.color}
+            stroke={el.strokeColor}
+            strokeWidth={el.strokeWidth}
+            onMouseDown={(e) => handleMouseDown(e, el.id)}
+          />
+        );
+      }
+
+      if (el.content === "star") {
+        return (
+          <polygon
+            key={el.id}
+            points={`${el.x + el.width/2},${el.y} ${el.x + el.width*0.65},${el.y + el.height*0.35} ${el.x + el.width},${el.y + el.height*0.35} ${el.x + el.width*0.75},${el.y + el.height*0.6} ${el.x + el.width*0.85},${el.y + el.height} ${el.x + el.width/2},${el.y + el.height*0.75} ${el.x + el.width*0.15},${el.y + el.height} ${el.x + el.width*0.25},${el.y + el.height*0.6} ${el.x},${el.y + el.height*0.35} ${el.x + el.width*0.35},${el.y + el.height*0.35}`}
+            fill={el.color}
+            stroke={el.strokeColor}
+            strokeWidth={el.strokeWidth}
+            onMouseDown={(e) => handleMouseDown(e, el.id)}
+          />
+        );
+      }
+
+      if (el.content === "divider") {
+        return (
+          <line
+            key={el.id}
+            x1={el.x}
+            y1={el.y + el.height / 2}
+            x2={el.x + el.width}
+            y2={el.y + el.height / 2}
+            stroke={el.strokeColor}
+            strokeWidth={el.strokeWidth}
+            onMouseDown={(e) => handleMouseDown(e, el.id)}
+          />
+        );
+      }
+    }
+
+    return null;
   };
 
   return (
-    <div
-      className="w-full relative"
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Left Inputs Configurator Column */}
-        <div className="lg:col-span-5 flex flex-col justify-between space-y-8">
-          <div>
-            <div className="font-mono text-[9px] text-[#FF3E00] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-              <span>[06 // PRE-FLIGHT SANDBOX]</span>
-              <span className="h-[1px] w-8 bg-[#FF3E00]/40"></span>
-            </div>
-            <h3 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
-              Brand Identity<br />
-              Simulator
+    <div className="w-full relative select-none">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* LEFT COLUMN: Toolboxes & Object Manager */}
+        <div className="lg:col-span-4 flex flex-col gap-5">
+          
+          {/* Header metadata */}
+          <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl">
+            <span className="text-[9px] font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">
+              [SYSTEM: COREL_CANVA_DECK_V1]
+            </span>
+            <h3 className="text-xl font-black uppercase text-white tracking-tight">
+              Vector Design Deck
             </h3>
-            <p className="text-sm text-[#737373] mt-3 max-w-sm">
-              Prospective clients can interact with Momin's design rules live. Input your brand name, select a structure system, and watch our pre-flight vector canvas render an instant physical mockup.
+            <p className="text-[10px] text-gray-500 font-mono mt-1">
+              Drag, resize, add elements, draw Bézier paths, and pre-flight layouts.
             </p>
+            
+            {/* Canvas Base Action Tools */}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => setActiveTool('select')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-sm font-mono text-[9px] uppercase tracking-wider cursor-pointer border transition-colors ${
+                  activeTool === 'select' 
+                    ? "bg-[#FF3E00] text-black font-extrabold border-[#FF3E00]" 
+                    : "bg-[#161616] border-white/5 text-gray-400 hover:text-white"
+                }`}
+              >
+                <Type className="w-3.5 h-3.5" />
+                Select
+              </button>
+              <button
+                onClick={() => setActiveTool('pen')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-sm font-mono text-[9px] uppercase tracking-wider cursor-pointer border transition-colors ${
+                  activeTool === 'pen' 
+                    ? "bg-[#FF3E00] text-black font-extrabold border-[#FF3E00]" 
+                    : "bg-[#161616] border-white/5 text-gray-400 hover:text-white"
+                }`}
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                Pen Tool
+              </button>
+            </div>
+          </div>
 
-            {/* Input name */}
-            <div className="mt-8">
-              <label className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
-                User Brand Spec Name
+          {/* Style Editor Panel */}
+          {selectedElement && (
+            <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl flex flex-col gap-3">
+              <span className="text-[9px] font-mono uppercase text-[#FF3E00] tracking-widest block border-b border-white/5 pb-1">
+                // Element Customization
+              </span>
+
+              {/* Text-Specific inputs */}
+              {selectedElement.type === "text" && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] font-mono text-gray-400 uppercase">Edit Content</label>
+                  <input
+                    type="text"
+                    value={selectedElement.content}
+                    onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, content: e.target.value.toUpperCase() } : el))}
+                    className="bg-[#161616] border border-white/5 text-xs text-white p-2 rounded-sm font-mono focus:border-[#FF3E00] focus:outline-none"
+                  />
+
+                  <label className="text-[9px] font-mono text-gray-400 uppercase mt-1">Font family</label>
+                  <div className="grid grid-cols-2 gap-1">
+                    {fontPresets.map((f, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, fontFamily: f.value } : el))}
+                        className={`text-[8px] font-mono py-1 rounded-sm border cursor-pointer ${
+                          selectedElement.fontFamily === f.value ? "border-[#FF3E00] text-[#FF3E00]" : "border-white/5 text-gray-500"
+                        }`}
+                      >
+                        {f.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <label className="text-[8px] font-mono text-gray-400 uppercase block">Size: {selectedElement.fontSize}px</label>
+                      <input
+                        type="range"
+                        min="8"
+                        max="48"
+                        value={selectedElement.fontSize}
+                        onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, fontSize: Number(e.target.value) } : el))}
+                        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[8px] font-mono text-gray-400 uppercase block">Letter spacing: {selectedElement.letterSpacing}px</label>
+                      <input
+                        type="range"
+                        min="-2"
+                        max="12"
+                        value={selectedElement.letterSpacing}
+                        onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, letterSpacing: Number(e.target.value) } : el))}
+                        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vector Stroke styling */}
+              {selectedElement.type === "shape" && (
+                <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[8px] font-mono text-gray-400 uppercase block">Border thickness: {selectedElement.strokeWidth}px</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="8"
+                        step="0.5"
+                        value={selectedElement.strokeWidth}
+                        onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, strokeWidth: Number(e.target.value) } : el))}
+                        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[8px] font-mono text-gray-400 uppercase block">Rotation: {selectedElement.rotation}°</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        value={selectedElement.rotation}
+                        onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, rotation: Number(e.target.value) } : el))}
+                        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono text-gray-400 uppercase">Stroke Hex</label>
+                      <input
+                        type="text"
+                        value={selectedElement.strokeColor}
+                        onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, strokeColor: e.target.value } : el))}
+                        className="bg-[#161616] border border-white/5 text-[9px] font-mono text-white p-1 rounded-sm focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-mono text-gray-400 uppercase">Fill Hex</label>
+                      <input
+                        type="text"
+                        value={selectedElement.color}
+                        onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, color: e.target.value } : el))}
+                        className="bg-[#161616] border border-white/5 text-[9px] font-mono text-white p-1 rounded-sm focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Color Presets */}
+              <div className="flex flex-col gap-1.5 mt-1">
+                <label className="text-[8px] font-mono text-gray-400 uppercase">Vibrant Color Presets</label>
+                <div className="flex gap-1.5">
+                  {colorPresets.map((col, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, color: el.type === 'text' ? col.hex : el.color, strokeColor: el.type === 'shape' ? col.hex : el.strokeColor } : el))}
+                      className="w-5 h-5 rounded-full border border-white/20 transition-transform hover:scale-110 cursor-pointer"
+                      style={{ backgroundColor: col.hex }}
+                      title={col.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Layer Panel / Object Manager */}
+          <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl flex flex-col gap-2">
+            <span className="text-[9px] font-mono uppercase text-[#FF3E00] tracking-widest block border-b border-white/5 pb-1 mb-1">
+              // CorelDRAW Object Manager
+            </span>
+
+            <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+              {elements.map((el) => {
+                const isSelected = selectedElementId === el.id;
+                return (
+                  <div
+                    key={el.id}
+                    className={`flex items-center justify-between p-2 rounded-sm border transition-all ${
+                      isSelected 
+                        ? "bg-[#FF3E00]/10 border-[#FF3E00]/40 text-white" 
+                        : "bg-[#161616]/40 border-white/5 text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <button
+                      onClick={() => setSelectedElementId(el.id)}
+                      className="flex-1 text-left font-mono text-[9px] truncate tracking-wide cursor-pointer"
+                    >
+                      {el.id.toUpperCase()}
+                    </button>
+                    
+                    {/* Layer controls */}
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <button
+                        onClick={() => toggleLock(el.id)}
+                        className="hover:text-white cursor-pointer"
+                        title={el.isLocked ? "Unlock Object" : "Lock Object"}
+                      >
+                        {el.isLocked ? <Lock className="w-3 h-3 text-[#FF3E00]" /> : <Unlock className="w-3 h-3 text-gray-600" />}
+                      </button>
+                      <button
+                        onClick={() => toggleHide(el.id)}
+                        className="hover:text-white cursor-pointer"
+                        title={el.isHidden ? "Show Object" : "Hide Object"}
+                      >
+                        {el.isHidden ? <EyeOff className="w-3 h-3 text-red-500" /> : <Eye className="w-3 h-3 text-gray-600" />}
+                      </button>
+                      <button
+                        onClick={() => arrangeLayer(el.id, 'front')}
+                        className="hover:text-white cursor-pointer"
+                        title="Bring to Front"
+                      >
+                        <ChevronUp className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => arrangeLayer(el.id, 'back')}
+                        className="hover:text-white cursor-pointer"
+                        title="Send to Back"
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+                      {el.id !== "bg-frame" && (
+                        <button
+                          onClick={() => deleteElement(el.id)}
+                          className="text-red-500 hover:text-red-400 cursor-pointer"
+                          title="Delete Object"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+
+        {/* CENTER COLUMN: Interactive SVG Canvas Workspace */}
+        <div className="lg:col-span-5 flex flex-col items-center justify-center">
+          
+          <div className="font-mono text-[9px] text-[#A3A3A3] uppercase tracking-[0.25em] mb-3 flex items-center justify-between w-full">
+            <span>[Proofing Workspace: 1:1 V_PREVIEW]</span>
+            {activeTool === 'pen' && (
+              <span className="text-[#FF3E00] animate-pulse">Pen mode active // Click to place nodes</span>
+            )}
+          </div>
+
+          <div className="relative w-full max-w-[400px] border border-white/10 rounded-xl overflow-hidden bg-[#070707] shadow-2xl p-4 flex flex-col items-center">
+            
+            {/* Safe boundaries grid guidelines */}
+            <div className="absolute inset-0 border-[20px] border-dashed border-[#FF007F]/5 pointer-events-none z-10" />
+
+            <svg
+              ref={canvasRef}
+              viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+              className="w-full aspect-[400/250] bg-black border border-white/5 relative z-20 cursor-crosshair overflow-hidden"
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onClick={handlePenCanvasClick}
+            >
+              {/* Dynamic Snapping guidelines (Corel snap alignment) */}
+              {snapLines?.x && (
+                <line x1={snapLines.x} y1={0} x2={snapLines.x} y2={canvasHeight} stroke="#FF007F" strokeWidth="1" strokeDasharray="3,3" />
+              )}
+              {snapLines?.y && (
+                <line x1={0} y1={snapLines.y} x2={canvasWidth} y2={snapLines.y} stroke="#FF007F" strokeWidth="1" strokeDasharray="3,3" />
+              )}
+
+              {/* Render vector nodes Bézier curve (Pen Tool) */}
+              {penPathD && (
+                <path d={penPathD} fill="none" stroke="#FF3E00" strokeWidth="2.5" strokeLinecap="round" />
+              )}
+
+              {/* Render Canvas Elements list */}
+              {elements.map(renderSVGElement)}
+
+              {/* Interactive Transform Bounds box selector for Canva scale */}
+              {selectedElement && activeTool === 'select' && !selectedElement.isLocked && !selectedElement.isHidden && (
+                <g className="selection-frame" transform={`translate(${selectedElement.x}, ${selectedElement.y}) rotate(${selectedElement.rotation})`}>
+                  {/* Bounding box dashes */}
+                  <rect
+                    x={0}
+                    y={0}
+                    width={selectedElement.width}
+                    height={selectedElement.height}
+                    fill="none"
+                    stroke="#FF3E00"
+                    strokeWidth="1.2"
+                    strokeDasharray="4,3"
+                  />
+                  
+                  {/* Corner Resize Handles circles */}
+                  <circle
+                    cx={selectedElement.width}
+                    cy={selectedElement.height}
+                    r="4"
+                    fill="#FF3E00"
+                    className="cursor-se-resize"
+                    onMouseDown={(e) => handleMouseDown(e, selectedElement.id, "bottom-right")}
+                  />
+                </g>
+              )}
+
+              {/* Render Pen Tool anchor points overlays */}
+              {activeTool === 'pen' && penNodes.map((node, idx) => (
+                <g key={idx}>
+                  {/* Lines to handles */}
+                  <line x1={node.x} y1={node.y} x2={node.h1x} y2={node.h1y} stroke="#9333ea" strokeWidth="0.8" />
+                  <line x1={node.x} y1={node.y} x2={node.h2x} y2={node.h2y} stroke="#9333ea" strokeWidth="0.8" />
+                  
+                  {/* Anchor Point node */}
+                  <circle cx={node.x} cy={node.y} r="4" fill="#FF3E00" stroke="#ffffff" strokeWidth="1" />
+                  {/* Handles */}
+                  <circle cx={node.h1x} cy={node.h1y} r="3" fill="#9333ea" />
+                  <circle cx={node.h2x} cy={node.h2y} r="3" fill="#9333ea" />
+                </g>
+              ))}
+            </svg>
+
+            {/* Canvas controls quick menu */}
+            <div className="flex gap-3 mt-4 w-full">
+              <button
+                onClick={addTextElement}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-sm font-mono text-[9px] text-[#FF3E00] border border-[#FF3E00]/30 bg-[#FF3E00]/5 hover:bg-[#FF3E00]/10 transition-colors uppercase tracking-wider cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Text
+              </button>
+              <button
+                onClick={handleExportSVG}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-sm font-mono text-[9px] text-[#06b6d4] border border-[#06b6d4]/30 bg-[#06b6d4]/5 hover:bg-[#06b6d4]/10 transition-colors uppercase tracking-wider cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export SVG
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-sm font-mono text-[9px] text-[#ec4899] border border-[#ec4899]/30 bg-[#ec4899]/5 hover:bg-[#ec4899]/10 transition-colors uppercase tracking-wider cursor-pointer"
+              >
+                <FileCheck className="w-3.5 h-3.5" />
+                Print PDF
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* RIGHT COLUMN: Custom Asset Library, SVGs, Pre-Flight Inspector */}
+        <div className="lg:col-span-3 flex flex-col gap-5">
+          
+          {/* Custom Asset Library */}
+          <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl flex flex-col gap-2">
+            <span className="text-[9px] font-mono uppercase text-[#FF3E00] tracking-widest block border-b border-white/5 pb-1">
+              // Custom Asset Library
+            </span>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <button
+                onClick={() => addAsset('star')}
+                className="py-1.5 text-center border border-white/5 hover:border-[#FF3E00]/50 rounded-sm font-mono text-[8px] uppercase text-gray-400 hover:text-white cursor-pointer bg-[#161616]/40"
+              >
+                + Add Star
+              </button>
+              <button
+                onClick={() => addAsset('badge')}
+                className="py-1.5 text-center border border-white/5 hover:border-[#FF3E00]/50 rounded-sm font-mono text-[8px] uppercase text-gray-400 hover:text-white cursor-pointer bg-[#161616]/40"
+              >
+                + Add Badge
+              </button>
+              <button
+                onClick={() => addAsset('divider')}
+                className="py-1.5 text-center border border-white/5 hover:border-[#FF3E00]/50 rounded-sm font-mono text-[8px] uppercase text-gray-400 hover:text-white cursor-pointer bg-[#161616]/40 col-span-2"
+              >
+                + Add Divider line
+              </button>
+            </div>
+
+            {/* SVG Upload zone */}
+            <div className="mt-2 pt-2 border-t border-white/5">
+              <label className="text-[8px] font-mono text-gray-400 uppercase block mb-1">Upload SVG Logo Asset</label>
+              <label className="block w-full border border-dashed border-white/10 hover:border-[#FF3E00]/40 rounded-sm p-3 text-center cursor-pointer bg-[#161616]/20 transition-colors">
+                <span className="text-[9px] font-mono text-brand-muted hover:text-white block uppercase">Choose SVG file</span>
+                <input
+                  type="file"
+                  accept=".svg"
+                  onChange={handleSVGUpload}
+                  className="hidden"
+                />
               </label>
-              <input
-                type="text"
-                maxLength={20}
-                value={brandName}
-                onChange={(e) => setBrandName(e.target.value.toUpperCase() || "BRAND")}
-                className="w-full bg-[#111]/30 backdrop-blur-md border border-white/5 p-3 text-sm text-white font-mono tracking-widest focus:outline-none focus:border-[#FF3E00] uppercase rounded-lg"
-                placeholder="ENTER BRAND..."
+            </div>
+          </div>
+
+          {/* Pre-Flight inspector */}
+          <div className="bg-[#111]/40 border border-white/5 p-4 rounded-xl flex flex-col gap-2">
+            <span className="text-[9px] font-mono uppercase text-[#FF3E00] tracking-widest block border-b border-white/5 pb-1">
+              // Pre-Flight Inspector
+            </span>
+
+            {/* Safety Rating Gauge bar */}
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-[9px] font-mono text-gray-400">PRINT SAFETY RATING:</span>
+              <span className="text-xs font-mono font-bold" style={{ color: preFlightReport.safetyScore > 70 ? "#00ffcc" : "#FF3E00" }}>
+                {preFlightReport.safetyScore}%
+              </span>
+            </div>
+            <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mt-0.5">
+              <div 
+                className="h-full transition-all duration-300"
+                style={{ 
+                  width: `${preFlightReport.safetyScore}%`,
+                  backgroundColor: preFlightReport.safetyScore > 70 ? "#00ffcc" : "#FF3E00"
+                }}
               />
             </div>
 
-            {/* Vibe Selection */}
-            <div className="mt-6">
-              <span className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
-                Structural Vibe Select
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {vibePresets.map((vp) => (
-                  <button
-                    key={vp.id}
-                    onClick={() => setVibe(vp.id)}
-                    className={`p-3 text-left cursor-pointer text-xs font-mono transition-all border rounded-lg ${
-                      vibe === vp.id
-                        ? "bg-[#FF3E00] text-black border-[#FF3E00] font-black font-extrabold shadow-md"
-                        : "bg-[#111]/30 backdrop-blur-md text-[#A3A3A3] border-white/5 hover:border-[#FF3E00]/40 hover:text-white"
-                    }`}
-                  >
-                    {vp.label}
-                  </button>
-                ))}
-              </div>
+            {/* Alerts checklist */}
+            <div className="flex flex-col gap-1.5 mt-2 max-h-[100px] overflow-y-auto pr-1">
+              {preFlightReport.alerts.length === 0 ? (
+                <div className="text-[8.5px] font-mono text-[#00ffcc] uppercase leading-relaxed">
+                  ✓ NO BLEED ISSUES DETECTED. VECTOR DOCUMENT PRE-FLIGHT APPROVED FOR PRESS!
+                </div>
+              ) : (
+                preFlightReport.alerts.map((alert, i) => (
+                  <div key={i} className="text-[8.5px] font-mono text-[#FF3E00] leading-tight">
+                    {alert}
+                  </div>
+                ))
+              )}
             </div>
 
-            {/* Color Select */}
-            <div className="mt-6">
-              <span className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
-                Core Corporate Color Accent
-              </span>
-              <div className="flex gap-2.5">
-                {colorPresets.map((cp) => (
-                  <button
-                    key={cp.hex}
-                    onClick={() => setColorScheme(cp.hex)}
-                    style={{ backgroundColor: cp.hex }}
-                    className={`w-8 h-8 rounded cursor-pointer transition-all ${
-                      colorScheme === cp.hex
-                        ? "ring-2 ring-white scale-110 border-2 border-black"
-                        : "opacity-85 hover:opacity-100"
-                    }`}
-                    title={cp.name}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Logo Icon Select */}
-            <div className="mt-6">
-              <span className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
-                Select Identity Mark Icon
-              </span>
-              <div className="grid grid-cols-6 gap-2">
-                {(["helix", "compass", "crest", "shield", "clover", "trigrid"] as const).map((ic) => (
-                  <button
-                    key={ic}
-                    onClick={() => setSelectedIcon(ic)}
-                    className={`p-2 border rounded flex items-center justify-center cursor-pointer transition-all ${
-                      selectedIcon === ic
-                        ? "bg-[#FF3E00] text-black border-[#FF3E00] shadow-sm"
-                        : "bg-[#111]/30 border-white/5 text-[#737373] hover:text-white hover:border-[#FF3E00]/40"
-                    }`}
-                    title={`Icon: ${ic.toUpperCase()}`}
-                  >
-                    {renderIcon("w-4 h-4")}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Guides & Mockups Settings */}
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div>
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
-                  Construction Guides
-                </span>
+            {/* Bézier actions */}
+            {penNodes.length > 0 && (
+              <div className="border-t border-white/5 pt-2 mt-1.5 flex justify-between items-center">
+                <span className="text-[8px] font-mono text-gray-500 uppercase">PEN PATH ACTIVE</span>
                 <button
-                  onClick={() => setShowVectorGuides(!showVectorGuides)}
-                  className={`w-full py-2 font-mono text-[9px] uppercase tracking-wider border rounded cursor-pointer transition-all ${
-                    showVectorGuides
-                      ? "bg-[#FF3E00]/10 border-[#FF3E00]/40 text-[#FF3E00]"
-                      : "bg-[#111]/30 border-white/5 text-[#737373] hover:text-white"
-                  }`}
+                  onClick={resetPenDrawing}
+                  className="flex items-center gap-1 py-1 px-2 border border-red-500/20 hover:border-red-500 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-[8px] font-mono uppercase rounded-sm cursor-pointer transition-colors"
                 >
-                  {showVectorGuides ? "Guides: ON" : "Guides: OFF"}
+                  <Undo className="w-2.5 h-2.5" />
+                  Clear Nodes
                 </button>
               </div>
-
-              <div>
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
-                  Stationary Type
-                </span>
-                <select
-                  value={activeMockupType}
-                  onChange={(e) => setActiveMockupType(e.target.value as MockupType)}
-                  className="w-full bg-[#111]/30 border border-white/5 p-2 text-[9px] font-mono text-white focus:outline-none focus:border-[#FF3E00] uppercase rounded cursor-pointer"
-                >
-                  <option value="card">Business Card</option>
-                  <option value="letterhead">Corporate Letterhead</option>
-                  <option value="tag">Product Hangtag</option>
-                  <option value="acrylic">Acrylic Shield Plate</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-white/5 flex gap-3">
-            <button
-              onClick={handleCopySpec}
-              className="flex-grow flex items-center justify-center gap-2 bg-[#111]/30 backdrop-blur-md text-white border border-white/5 py-3 font-mono text-[10px] uppercase tracking-wider hover:border-[#FF3E00] hover:text-[#FF3E00] cursor-pointer transition-all rounded-lg"
-            >
-              {copied ? <Check className="w-4 text-[#FF3E00] animate-bounce" /> : <Copy className="w-4" />}
-              <span>{copied ? "Copied Spec!" : "Copy Identity Spec"}</span>
-            </button>
-            <button
-              onClick={() => {
-                setBrandName("FAREEHA");
-                setVibe("Brutalist");
-                setColorScheme("#FF3E00");
-              }}
-              className="p-3 bg-[#111]/30 backdrop-blur-md border border-white/5 hover:border-[#FF3E00] text-[#737373] hover:text-white cursor-pointer transition-colors rounded-lg"
-              title="Reset configuration"
-            >
-              <RefreshCw className="w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Right Output Vector Live Preview Canvas */}
-        <div className="lg:col-span-7 bg-[#111]/30 border border-white/5 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col justify-between min-h-[460px] shadow-xl">
-          
-          {/* Subtle Vector Background Circles */}
-          <div className="absolute inset-0 pointer-events-none opacity-[0.02]">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full border border-white"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] rounded-full border border-white border-dashed"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-white"></div>
-          </div>
-
-          {/* Canvas Decorative Header */}
-          <div className="flex justify-between items-center font-mono text-[8px] text-[#737373] border-b border-white/5 pb-4">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#FF3E00] animate-pulse"></span>
-              <span>LIVE CORELDRAW DIGITAL MOCK // CHANNEL-A</span>
-            </div>
-            <div>STATUS: PRE-FLIGHT COMPLIANT</div>
-          </div>
-
-          {/* MAIN RENDER ACCORDING TO USER CONFIG */}
-          {/* Guides helper */}
-          {(() => {
-            if (!showVectorGuides) return null;
-            return (
-              <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-[#FF007F]/30 border-t border-dashed border-[#FF007F]/20" />
-                <div className="absolute top-0 left-1/2 w-[1px] h-full border-l border-dashed border-[#FF007F]/20" />
-                <div className="absolute top-1/2 left-1/2 w-[240px] h-[240px] border border-dashed border-[#FF007F]/10 rounded-full -translate-x-1/2 -translate-y-1/2" />
-                <div className="absolute top-1/2 left-1/2 w-[140px] h-[140px] border border-dotted border-[#FF007F]/15 rounded-full -translate-x-1/2 -translate-y-1/2" />
-                <div className="absolute top-2 left-2 font-mono text-[6px] text-[#FF007F] opacity-70">
-                  GRID_ALIGN_PASS: 90° RADIAL
-                </div>
-                <div className="absolute bottom-2 right-2 font-mono text-[6px] text-[#FF007F] opacity-70">
-                  COREL_VECTOR: 1:1 TRUE_LINE
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* MAIN RENDER ACCORDING TO USER CONFIG */}
-          <div className="my-6 flex flex-col items-center justify-center flex-1 z-10">
-            
-            {/* BUSINESS CARD MOCKUP */}
-            {activeMockupType === "card" && (
-              <div 
-                className={`w-[290px] sm:w-[320px] h-[180px] bg-black border p-5 flex flex-col justify-between relative rounded-xl shadow-2xl transition-all duration-300 ${
-                  vibe === "Brutalist" ? "border-2 rounded-none" :
-                  vibe === "Herbal" ? "border rounded-2xl border-dashed" :
-                  vibe === "Trophy" ? "border-2 border-double" : "border-white/10"
-                }`}
-                style={{ borderColor: vibe === "Brutalist" ? colorScheme : vibe === "Minimal" ? "rgba(255,255,255,0.1)" : colorScheme + "50" }}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <div style={{ color: colorScheme }}>
-                      {renderIcon("w-5 h-5")}
-                    </div>
-                    <span className={`font-mono text-[8px] tracking-widest text-[#A3A3A3] uppercase ${vibe === 'Brutalist' ? 'font-black text-white' : ''}`}>
-                      {brandName}
-                    </span>
-                  </div>
-                  <span className="text-[5.5px] font-mono text-gray-600">85x55mm B_CARD</span>
-                </div>
-
-                <div className="text-left my-auto py-2">
-                  <h4 
-                    className={`text-white uppercase leading-none ${
-                      vibe === "Brutalist" ? "text-2xl font-black tracking-tighter" :
-                      vibe === "Minimal" ? "text-lg font-bold tracking-[0.2em]" :
-                      vibe === "Herbal" ? "text-xl font-extrabold tracking-tight" : "text-xl font-black tracking-wider"
-                    }`}
-                    style={vibe === "Brutalist" ? { color: colorScheme } : {}}
-                  >
-                    {brandName || "MUTED"}
-                  </h4>
-                  <p className="text-[7.5px] font-mono text-[#737373] mt-1">
-                    ESTD 2026 // {vibe.toUpperCase()} BRAND CAPSULE
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-end border-t border-white/5 pt-1.5 font-mono text-[6px] text-gray-500">
-                  <span>PLATE APPROVED: OK</span>
-                  <span>ACCENT: {colorScheme}</span>
-                </div>
-              </div>
             )}
-
-            {/* LETTERHEAD MOCKUP */}
-            {activeMockupType === "letterhead" && (
-              <div 
-                className={`w-[220px] h-[290px] bg-black border p-4 flex flex-col justify-between relative shadow-2xl transition-all duration-300 ${
-                  vibe === "Brutalist" ? "border-2 rounded-none" :
-                  vibe === "Herbal" ? "border rounded-xl border-dashed" :
-                  vibe === "Trophy" ? "border-2 border-double" : "border-white/10"
-                }`}
-                style={{ borderColor: vibe === "Brutalist" ? colorScheme : vibe === "Minimal" ? "rgba(255,255,255,0.1)" : colorScheme + "50" }}
-              >
-                {/* Header block */}
-                <div className="border-b border-white/5 pb-2 flex justify-between items-start">
-                  <div className="flex items-center gap-1.5">
-                    <div style={{ color: colorScheme }}>
-                      {renderIcon("w-4 h-4")}
-                    </div>
-                    <span className="text-[7px] font-mono font-bold uppercase tracking-wider text-white">
-                      {brandName}
-                    </span>
-                  </div>
-                  <div className="text-[5px] font-mono text-gray-600 text-right">
-                    COREL_PROOF_R1
-                  </div>
-                </div>
-
-                {/* Letter Body Lines */}
-                <div className="flex-1 py-4 space-y-2 select-none pointer-events-none opacity-20">
-                  <div className="h-[2px] bg-white w-4/5 rounded-full" />
-                  <div className="h-[2px] bg-white w-full rounded-full" />
-                  <div className="h-[2px] bg-white w-3/4 rounded-full" />
-                  <div className="h-[2px] bg-white w-5/6 rounded-full" />
-                  <div className="h-[2px] bg-white w-2/3 rounded-full" />
-                </div>
-
-                {/* Footer block */}
-                <div className="border-t border-white/5 pt-2 flex justify-between items-center font-mono text-[5.5px] text-gray-500">
-                  <span>INFO@BRAND.COM</span>
-                  <span>PAGE 01 / VECTOR_OK</span>
-                </div>
-              </div>
-            )}
-
-            {/* PRODUCT HANGTAG */}
-            {activeMockupType === "tag" && (
-              <div 
-                className={`w-[130px] h-[220px] bg-black border p-4 flex flex-col justify-between relative shadow-2xl transition-all duration-300 ${
-                  vibe === "Brutalist" ? "border-2 rounded-none" :
-                  vibe === "Herbal" ? "border rounded-xl border-dashed" :
-                  vibe === "Trophy" ? "border-2 border-double" : "border-white/10"
-                }`}
-                style={{ borderColor: vibe === "Brutalist" ? colorScheme : vibe === "Minimal" ? "rgba(255,255,255,0.1)" : colorScheme + "50", borderRadius: "16px 16px 4px 4px" }}
-              >
-                {/* String Hole Rivet */}
-                <div className="mx-auto w-3 h-3 rounded-full bg-[#111] border border-white/20 flex items-center justify-center mb-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-black" />
-                </div>
-
-                <div className="flex flex-col items-center justify-center my-auto py-2 text-center">
-                  <div style={{ color: colorScheme }} className="mb-2">
-                    {renderIcon("w-7 h-7")}
-                  </div>
-                  <h4 
-                    className={`text-white uppercase leading-none ${
-                      vibe === "Brutalist" ? "text-xl font-black tracking-tight" :
-                      vibe === "Minimal" ? "text-sm font-bold tracking-[0.2em]" :
-                      vibe === "Herbal" ? "text-lg font-extrabold" : "text-base font-black"
-                    }`}
-                    style={vibe === "Brutalist" ? { color: colorScheme } : {}}
-                  >
-                    {brandName || "HANGTAG"}
-                  </h4>
-                  <span className="text-[6.5px] font-mono text-gray-500 uppercase mt-1">
-                    CERTIFIED ITEM // 2026
-                  </span>
-                </div>
-
-                {/* Simulated barcode */}
-                <div className="flex flex-col items-center space-y-1 mt-2">
-                  <div className="flex justify-center items-center gap-[1.5px] h-5 w-full max-w-[80px] bg-white p-0.5 rounded-xs select-none">
-                    <div className="w-[1.5px] h-full bg-black" />
-                    <div className="w-[0.8px] h-full bg-black" />
-                    <div className="w-[2px] h-full bg-black" />
-                    <div className="w-[0.5px] h-full bg-black" />
-                    <div className="w-[1.5px] h-full bg-black" />
-                    <div className="w-[0.8px] h-full bg-black" />
-                    <div className="w-[2px] h-full bg-black" />
-                  </div>
-                  <span className="text-[5px] font-mono text-gray-500">#RAW_PRNT_902</span>
-                </div>
-              </div>
-            )}
-
-            {/* ACRYLIC SHIELD PLATE */}
-            {activeMockupType === "acrylic" && (
-              <div 
-                className={`w-[220px] sm:w-[240px] h-[220px] sm:h-[240px] bg-[#0c0c0e]/90 border-2 p-6 flex flex-col justify-between relative shadow-2xl transition-all duration-300 ${
-                  vibe === "Brutalist" ? "border-2 rounded-none" :
-                  vibe === "Herbal" ? "border rounded-3xl border-dashed" :
-                  vibe === "Trophy" ? "border-2 border-double" : "border-white/10"
-                }`}
-                style={{ borderColor: vibe === "Brutalist" ? colorScheme : vibe === "Minimal" ? "rgba(255,255,255,0.1)" : colorScheme + "50", borderRadius: vibe === "Brutalist" ? "0px" : "28px" }}
-              >
-                <div className="absolute top-2 left-6 text-[5px] font-mono text-gray-600 uppercase">
-                  LASER ENGRAVE PATH: VERIFIED
-                </div>
-
-                <div className="flex flex-col items-center justify-center my-auto py-2 text-center">
-                  <div style={{ color: colorScheme }} className="mb-3 animate-pulse">
-                    {renderIcon("w-8 h-8")}
-                  </div>
-                  <h4 
-                    className={`text-white uppercase leading-none tracking-wide ${
-                      vibe === "Brutalist" ? "text-xl font-black" :
-                      vibe === "Minimal" ? "text-base font-bold tracking-[0.2em]" :
-                      vibe === "Herbal" ? "text-lg font-extrabold" : "text-lg font-black"
-                    }`}
-                    style={vibe === "Brutalist" ? { color: colorScheme } : {}}
-                  >
-                    {brandName || "EXCELLENCE"}
-                  </h4>
-                  <p className="text-[6.5px] font-mono text-gray-500 mt-2 max-w-[150px] mx-auto select-none">
-                    1st Position Vector Cutting Recognition Plate Profile
-                  </p>
-                </div>
-
-                {/* Metallic Award Base representation */}
-                <div className="h-2 w-full bg-gradient-to-r from-gray-500 via-gray-100 to-gray-600 border border-gray-600 rounded-sm shadow-sm flex items-center justify-center font-mono text-[4.5px] text-gray-800 font-bold uppercase select-none">
-                  [ STEEL MOUNT BASE ]
-                </div>
-              </div>
-            )}
-
-          </div>
-
-          {/* Canvas Tech details bottom footer */}
-          <div className="border-t border-white/5 pt-4 flex flex-wrap justify-between font-mono text-[9px] text-[#737373] uppercase">
-            <div>Style Vector Class: <span className="text-white">{vibe.toUpperCase()} SYSTEM</span></div>
-            <div>Mockup Model: <span className="text-white">{activeMockupType.toUpperCase()} v1</span></div>
           </div>
 
         </div>
+
       </div>
     </div>
   );
