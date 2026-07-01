@@ -583,6 +583,16 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
       {/* Curved CRT Display boundary line */}
       <Line points={[[-2.1, -0.9, -0.1], [2.1, -0.9, -0.1], [2.3, 0.9, -0.1], [-2.3, 0.9, -0.1], [-2.1, -0.9, -0.1]]} color={theme === "dark" ? "#222" : "#ddd"} lineWidth={1.5} />
       
+      {/* Motherboard circuit pathway traces & glowing microchip */}
+      <group position={[0, 0, -0.15]}>
+        <Line points={[[-2.2, -1.3, 0], [-1.0, -1.3, 0], [-0.5, -0.8, 0], [0.5, -0.8, 0], [1.0, -1.3, 0], [2.2, -1.3, 0]]} color={theme === "dark" ? "#113322" : "#ccffdd"} lineWidth={1} transparent opacity={0.6} />
+        <Line points={[[-1.5, 0.8, 0], [-0.8, 0.2, 0], [0.8, 0.2, 0], [1.5, 0.8, 0]]} color={theme === "dark" ? "#113322" : "#ccffdd"} lineWidth={1} transparent opacity={0.6} />
+        <mesh position={[0, -0.8, 0.01]}>
+          <boxGeometry args={[0.3, 0.18, 0.05]} />
+          <meshBasicMaterial color="#FF3E00" />
+        </mesh>
+      </group>
+
       {/* Falling binary matrix background streams */}
       <CRTTextStream position={[-1.8, 0.7, -0.12]} color={strokeColor} />
       <CRTTextStream position={[-1.0, 0.5, -0.12]} color={strokeColor} />
@@ -730,21 +740,24 @@ function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
       {/* Light speed warp streaks */}
       <LightStreaks theme={theme} />
 
-      {/* Synthwave wireframe mountains flanking road */}
-      {Array.from({ length: 9 }).map((_, i) => {
-        const sideZ = -10 - i * 11;
+      {/* Cyberpunk wireframe city buildings flanking road */}
+      {Array.from({ length: 12 }).map((_, i) => {
+        const sideZ = -5 - i * 8;
         const pathPt = splinePoints.find(p => p.z <= sideZ) || splinePoints[0];
+        const height = 1.8 + Math.sin(i * 1.7) * 1.4;
+        const leftX = pathPt.x - 3.4;
+        const rightX = pathPt.x + 3.4;
         return (
           <group key={i}>
-            {/* Left Mountain */}
-            <mesh position={[pathPt.x - 3.8, pathPt.y - 0.7, sideZ]} rotation={[0, Math.PI / 4, 0]}>
-              <coneGeometry args={[1.6, 2.0, 4]} />
-              <meshBasicMaterial color={theme === "dark" ? "#1e1b4b" : "#e2e8f0"} wireframe />
+            {/* Left Skyscraper */}
+            <mesh position={[leftX, pathPt.y - 0.7 + height / 2, sideZ]}>
+              <boxGeometry args={[0.8, height, 0.8]} />
+              <meshBasicMaterial color={theme === "dark" ? "#1e1b4b" : "#cbd5e1"} wireframe />
             </mesh>
-            {/* Right Mountain */}
-            <mesh position={[pathPt.x + 3.8, pathPt.y - 0.7, sideZ]} rotation={[0, Math.PI / 4, 0]}>
-              <coneGeometry args={[1.6, 2.0, 4]} />
-              <meshBasicMaterial color={theme === "dark" ? "#1e1b4b" : "#e2e8f0"} wireframe />
+            {/* Right Skyscraper */}
+            <mesh position={[rightX, pathPt.y - 0.7 + height / 2, sideZ]}>
+              <boxGeometry args={[0.8, height, 0.8]} />
+              <meshBasicMaterial color={theme === "dark" ? "#1e1b4b" : "#cbd5e1"} wireframe />
             </mesh>
           </group>
         );
@@ -862,15 +875,35 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
       </group>
 
       <group position={[0, -0.3, 0]}>
-        {/* Draw main frame lines progressively */}
-        {drawLimit > 0.15 && (
-          <Line points={[[-1.4, 0, 0], [-1.4, 0, 1.2], [1.4, 0, 1.2], [1.4, 0, 0], [-1.4, 0, 0]]} color={blueprintColor} lineWidth={2.5} />
-        )}
-        
-        {/* Laptop Screen Lid open */}
-        {drawLimit > 0.45 && (
-          <Line points={[[-1.2, 0, 0], [-1.2, 1.2, 0], [1.2, 1.2, 0], [1.2, 0, 0], [-1.2, 0, 0]]} color={blueprintColor} lineWidth={2} rotation={[-0.45, 0, 0]} />
-        )}
+        {/* Exploded parts assembly animation */}
+        {(() => {
+          const explode = Math.max(0, (progress - 0.5) * 1.8);
+          return (
+            <>
+              {/* Motherboard/Chassis exploded guide lines */}
+              {explode > 0.02 && (
+                <>
+                  <Line points={[[-1.2, -explode * 0.4, 0.6], [-1.2, explode * 0.5, -explode * 0.3]]} color="#FF3E00" lineWidth={1} dashed />
+                  <Line points={[[1.2, -explode * 0.4, 0.6], [1.2, explode * 0.5, -explode * 0.3]]} color="#FF3E00" lineWidth={1} dashed />
+                </>
+              )}
+
+              {/* Base Chassis Group */}
+              <group position={[0, -explode * 0.4, 0]}>
+                {drawLimit > 0.15 && (
+                  <Line points={[[-1.4, 0, 0], [-1.4, 0, 1.2], [1.4, 0, 1.2], [1.4, 0, 0], [-1.4, 0, 0]]} color={blueprintColor} lineWidth={2.5} />
+                )}
+              </group>
+
+              {/* Screen Bezel Group */}
+              <group position={[0, explode * 0.5, -explode * 0.3]}>
+                {drawLimit > 0.45 && (
+                  <Line points={[[-1.2, 0, 0], [-1.2, 1.2, 0], [1.2, 1.2, 0], [1.2, 0, 0], [-1.2, 0, 0]]} color={blueprintColor} lineWidth={2} rotation={[-0.45, 0, 0]} />
+                )}
+              </group>
+            </>
+          );
+        })()}
 
         {/* Blueprint Drafting Dimensions W: 340mm */}
         {drawLimit > 0.3 && (
@@ -929,15 +962,23 @@ function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProp
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.2) * 0.95;
 
-  const particleChars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ[]{}#@$*";
+  const particleChars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ[]{}#@$*MOMINDESIGNDEVELOP";
   const bgLetters = useMemo(() => {
-    return Array.from({ length: 25 }).map(() => ({
-      char: particleChars[Math.floor(Math.random() * particleChars.length)],
-      x: (Math.random() - 0.5) * 5,
-      y: (Math.random() - 0.5) * 4,
-      z: -Math.random() * 4 - 1,
-      speed: 0.1 + Math.random() * 0.2
-    }));
+    return Array.from({ length: 90 }).map((_, i) => {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = 1.0 + Math.random() * 3.5;
+      
+      return {
+        char: particleChars[Math.floor(Math.random() * particleChars.length)],
+        x: r * Math.sin(phi) * Math.cos(theta),
+        y: r * Math.sin(phi) * Math.sin(theta),
+        z: r * Math.cos(phi),
+        speed: 0.1 + Math.random() * 0.2
+      };
+    });
   }, []);
 
   useFrame(() => {
@@ -947,72 +988,38 @@ function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProp
     const progress = smoothProgressRef.current;
 
     if (groupRef.current) {
-      groupRef.current.position.y = -progress * 1.5;
       groupRef.current.rotation.y = progress * Math.PI * 0.8;
+      groupRef.current.rotation.x = Math.sin(progress * 0.5) * 0.15;
     }
   });
 
   const progress = smoothProgressRef.current;
   const textColor = theme === "dark" ? "#ffffff" : "#111111";
-
-  // Scroll speed determines letter disintegration drift (Concept 4 Upgrade)
   const drift = scrollSpeedRef.current * 16.0;
 
   return (
-    <group ref={groupRef} scale={[scale, scale, scale]} position={[0, 0.5, -3]}>
-      {/* Background typographical noise field */}
+    <group ref={groupRef} scale={[scale, scale, scale]} position={[0, 0, -2.8]}>
+      {/* Massive Typographical Letter Sphere */}
       {bgLetters.map((p, i) => {
-        // Move letters dynamically based on scroll speed
-        const currentY = p.y + scrollSpeedRef.current * p.speed * 4;
-        const wrappedY = ((currentY + 2) % 4) - 2;
+        const factor = 1.0 + drift * 0.6;
         return (
-          <group key={i} position={[p.x, wrappedY, p.z]}>
-            <Text fontSize={0.12} color={textColor} transparent opacity={0.15}>
+          <group key={i} position={[p.x * factor, p.y * factor, p.z * factor]}>
+            <Text fontSize={0.14} color={textColor} transparent opacity={0.22}>
               {p.char}
             </Text>
           </group>
         );
       })}
 
-      {/* Connecting digital lines (Constellations) linking letters on disintegration */}
-      {drift > 0.02 && (
-        <group position={[0, 1.25, 0.02]}>
-          <Line points={[[-0.9 + drift, 0, 0], [-0.3, drift, 0]]} color={theme === "dark" ? "#00ffff" : "#0284c7"} lineWidth={1} transparent opacity={0.35} />
-          <Line points={[[-0.3, drift, 0], [0.3, -drift, 0]]} color={theme === "dark" ? "#ec4899" : "#db2777"} lineWidth={1} transparent opacity={0.35} />
-          <Line points={[[0.3, -drift, 0], [0.9 - drift, 0, 0]]} color={theme === "dark" ? "#eab308" : "#ca8a04"} lineWidth={1} transparent opacity={0.35} />
-          <Line points={[[0.9 - drift, 0, 0], [1.4, 0, -drift * 0.8]]} color={theme === "dark" ? "#00ff66" : "#059669"} lineWidth={1} transparent opacity={0.35} />
-        </group>
-      )}
-
-      {/* Splitting individual letters to simulate typography coordinate collapse */}
-      <group position={[0, 1.2, 0]}>
-        <group position={[-0.9 + drift, 0, 0]} rotation={[0, drift * 0.5, 0]}>
-          <Text fontSize={0.65} color={textColor}>M</Text>
-        </group>
-        <group position={[-0.3, drift, 0]}>
-          <Text fontSize={0.65} color={textColor}>O</Text>
-        </group>
-        <group position={[0.3, -drift, 0]}>
-          <Text fontSize={0.65} color={textColor}>M</Text>
-        </group>
-        <group position={[0.9 - drift, 0, 0]} rotation={[0, -drift * 0.5, 0]}>
-          <Text fontSize={0.65} color={textColor}>I</Text>
-        </group>
-        <group position={[1.4, 0, -drift * 0.8]}>
-          <Text fontSize={0.65} color={textColor}>N</Text>
-        </group>
+      {/* Main typographic structural headers */}
+      <group position={[0, 0.8, 0]}>
+        <Text fontSize={0.65} color={textColor}>MOMIN</Text>
       </group>
-
-      <group position={[-0.8, 0, -1]}>
-        <Text fontSize={0.55} color="#FF3E00">
-          DESIGN
-        </Text>
+      <group position={[0, 0, 0.8]}>
+        <Text fontSize={0.48} color="#FF3E00">DESIGN</Text>
       </group>
-
-      <group position={[0.8, -1.2, -2]}>
-        <Text fontSize={0.55} color={theme === "dark" ? "#00ffcc" : "#0d9488"}>
-          DEVELOP
-        </Text>
+      <group position={[0, -0.8, 1.4]}>
+        <Text fontSize={0.48} color={theme === "dark" ? "#00ffcc" : "#0d9488"}>DEVELOP</Text>
       </group>
     </group>
   );
@@ -1069,6 +1076,12 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
 
   return (
     <group scale={[scale, scale, scale]} position={[0, 0, -2.5]}>
+      {/* Outer shield dome wireframe sphere */}
+      <mesh>
+        <sphereGeometry args={[1.2, 16, 16]} />
+        <meshBasicMaterial color={theme === "dark" ? "#00ffcc" : "#FF3E00"} wireframe transparent opacity={0.12} />
+      </mesh>
+
       {/* Hologram Pedestal Base Emitter */}
       <group position={[0, -1.8, 0]}>
         <mesh>
@@ -1187,23 +1200,23 @@ function CameraDirector({
     } else if (style === "console") {
       targetX = 0;
       targetY = -progress * 0.4;
-      targetZ = 3.2;
+      targetZ = 3.2 - progress * 1.4;
     } else if (style === "blueprint") {
       targetX = progress * 0.3;
       targetY = 0;
-      targetZ = 3.5;
+      targetZ = 3.5 - progress * 0.8;
     } else if (style === "typography") {
       targetX = 0;
-      targetY = -progress * 1.2;
-      targetZ = 3.6;
+      targetY = 0;
+      targetZ = 3.6 - progress * 2.2;
     } else if (style === "hologram") {
       targetX = Math.sin(progress * Math.PI) * 0.4;
       targetY = 0;
-      targetZ = 3.4;
+      targetZ = 3.4 - progress * 1.4;
     } else if (style === "galaxy") {
       targetX = 0;
       targetY = 0;
-      targetZ = 3.5 - progress * 1.5;
+      targetZ = 3.5 - progress * 2.8;
     }
 
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX + pointer.x * 0.45, 0.025);
@@ -1249,7 +1262,7 @@ function GalaxyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const { viewport, pointer } = useThree();
   const scale = Math.min(1.0, viewport.width / 4.8) * 0.95;
 
-  const starCount = 350;
+  const starCount = 500;
   const stars = useMemo(() => {
     const particleColors = theme === "dark" 
       ? ["#00ffcc", "#06b6d4", "#9333ea", "#3b82f6"] 
@@ -1310,6 +1323,18 @@ function GalaxyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
         <ringGeometry args={[0.25, 0.32, 32]} />
         <meshBasicMaterial color={coreColor} transparent opacity={0.4} />
       </mesh>
+
+      {/* Galaxy Dust Belt / Orbital Rings */}
+      <group rotation={[Math.PI / 4, 0, 0]}>
+        <mesh>
+          <ringGeometry args={[2.0, 2.05, 64]} />
+          <meshBasicMaterial color={coreColor} transparent opacity={0.22} />
+        </mesh>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[2.8, 2.86, 64]} />
+          <meshBasicMaterial color={coreColor} transparent opacity={0.15} />
+        </mesh>
+      </group>
 
       {/* Orbiting star particles */}
       {stars.map((star, idx) => {
