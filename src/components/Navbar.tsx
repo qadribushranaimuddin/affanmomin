@@ -483,46 +483,56 @@ export default function Navbar({
     </nav>
 
     {/* Mobile Bottom Navigation Pill (Centered, Glassmorphic Scrollable Track) */}
-      <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[60%] max-w-[200px] h-[50px] rounded-full mobile-menu-bg border border-card-border shadow-[0_12px_40px_rgba(0,0,0,0.6)] flex items-center justify-between px-2.5 overflow-hidden select-none">
-        {/* Subtle Side Fade Overlays */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-black/25 to-transparent pointer-events-none z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-black/25 to-transparent pointer-events-none z-10" />
-
-        {/* Scrollable Track */}
-        <div 
-          id="mobile-bottom-nav-track"
-          className="flex items-center gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar w-full h-full px-4 py-1"
+    <AnimatePresence>
+      {!mobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 20, x: "-50%" }}
+          animate={{ opacity: 1, y: 0, x: "-50%" }}
+          exit={{ opacity: 0, y: 20, x: "-50%" }}
+          transition={{ type: "spring", stiffness: 220, damping: 25 }}
+          className="lg:hidden fixed bottom-6 left-1/2 z-50 w-[60%] max-w-[200px] h-[50px] rounded-full mobile-menu-bg border border-card-border shadow-[0_12px_40px_rgba(0,0,0,0.6)] flex items-center justify-between px-2.5 overflow-hidden select-none"
         >
-          {navItems.map((item) => {
-            const IconComponent = getMobileNavIcon(item.id);
-            const isActive = activeSection === item.id;
-            return (
-              <button
-                key={`mobile-nav-${item.id}`}
-                id={`mobile-nav-icon-${item.id}`}
-                onClick={() => handleItemClick(item.id)}
-                className={`snap-center shrink-0 flex items-center justify-center w-8 h-8 rounded-full relative transition-all duration-300 cursor-pointer ${
-                  isActive ? "text-[#FF3E00] scale-110" : "text-brand-muted hover:text-brand-text"
-                }`}
-                title={item.label}
-              >
-                {/* Active Indicator Glow behind */}
-                {isActive && (
-                  <motion.div
-                    layoutId="mobileNavActiveBackground"
-                    className="absolute inset-0 bg-[#FF3E00]/10 rounded-full border border-[#FF3E00]/30 shadow-[0_0_15px_rgba(255,62,0,0.15)] z-0"
-                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  />
-                )}
-                
-                <span className="relative z-10">
-                  <IconComponent className="w-4 h-4" />
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          {/* Subtle Side Fade Overlays */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-black/25 to-transparent pointer-events-none z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-black/25 to-transparent pointer-events-none z-10" />
+
+          {/* Scrollable Track */}
+          <div 
+            id="mobile-bottom-nav-track"
+            className="flex items-center gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar w-full h-full px-4 py-1"
+          >
+            {navItems.map((item) => {
+              const IconComponent = getMobileNavIcon(item.id);
+              const isActive = activeSection === item.id;
+              return (
+                <button
+                  key={`mobile-nav-${item.id}`}
+                  id={`mobile-nav-icon-${item.id}`}
+                  onClick={() => handleItemClick(item.id)}
+                  className={`snap-center shrink-0 flex items-center justify-center w-8 h-8 rounded-full relative transition-all duration-300 cursor-pointer ${
+                    isActive ? "text-[#FF3E00] scale-110" : "text-brand-muted hover:text-brand-text"
+                  }`}
+                  title={item.label}
+                >
+                  {/* Active Indicator Glow behind */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobileNavActiveBackground"
+                      className="absolute inset-0 bg-[#FF3E00]/10 rounded-full border border-[#FF3E00]/30 shadow-[0_0_15px_rgba(255,62,0,0.15)] z-0"
+                      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    />
+                  )}
+                  
+                  <span className="relative z-10">
+                    <IconComponent className="w-4 h-4" />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     </>
   );
 }
