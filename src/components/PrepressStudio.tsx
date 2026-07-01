@@ -48,6 +48,8 @@ export default function PrepressStudio() {
   const [showGrommets, setShowGrommets] = useState<boolean>(true);
   const [colorProfile, setColorProfile] = useState<'CMYK_PRINT' | 'RGB_SCREEN'>('CMYK_PRINT');
   const [showGrid, setShowGrid] = useState<boolean>(false);
+  const [showWindSlits, setShowWindSlits] = useState<boolean>(false);
+  const [finishingMargin, setFinishingMargin] = useState<'hem' | 'pole-tb' | 'pole-lr' | 'none'>('none');
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const [resolutionDpi, setResolutionDpi] = useState<number>(300); // 72, 150, 300, 600
@@ -368,6 +370,53 @@ export default function PrepressStudio() {
                 </div>
               </div>
 
+              {/* Mechanical Finishing Controls */}
+              <div className="bg-[#151515] border border-[#222] p-3 rounded space-y-3 mt-2">
+                <span className="text-[9px] font-mono text-[#FF3E00] uppercase tracking-wider block font-bold">
+                  // Mechanical Finishing Specs
+                </span>
+                
+                {/* Wind slits toggle */}
+                <div className="flex items-center justify-between font-mono text-[9px] text-[#8c8c8c]">
+                  <span>Stamp Wind Slits (Outdoor):</span>
+                  <button
+                    onClick={() => setShowWindSlits(!showWindSlits)}
+                    className={`px-2 py-0.5 border text-[8px] rounded-sm cursor-pointer font-bold transition-colors ${
+                      showWindSlits 
+                        ? 'bg-[#FF3E00]/20 border-[#FF3E00]/60 text-white' 
+                        : 'bg-black/40 border-white/5 text-gray-500 hover:text-white'
+                    }`}
+                  >
+                    {showWindSlits ? "ACTIVE SLITS" : "NO SLITS"}
+                  </button>
+                </div>
+
+                {/* Hem & pockets options */}
+                <div className="space-y-1">
+                  <span className="block font-mono text-[8.5px] text-[#8c8c8c]">FINISHING MARGINS & SLEEVES:</span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'none', label: 'None (Plain Cut)' },
+                      { id: 'hem', label: '1.5" Double Hem' },
+                      { id: 'pole-tb', label: 'Top/Bottom Sleeve' },
+                      { id: 'pole-lr', label: 'Side Sleeves' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setFinishingMargin(opt.id as any)}
+                        className={`py-1 text-[7.5px] font-mono uppercase tracking-wider cursor-pointer border rounded-sm transition-colors ${
+                          finishingMargin === opt.id 
+                            ? 'bg-[#FF3E00]/25 border-[#FF3E00] text-white font-extrabold' 
+                            : 'bg-black/40 border-white/5 text-gray-500 hover:text-white'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {/* CMYK Separator channels */}
               {isCMYK && (
                 <div className="bg-[#151515] border border-[#222] p-3 rounded space-y-2 mt-2">
@@ -601,6 +650,36 @@ export default function PrepressStudio() {
                     backgroundSize: resolutionDpi === 72 ? '4px 4px' : '2.5px 2.5px' 
                   }} 
                 />
+              )}
+
+              {/* Finishing margin stitches / sleeves */}
+              {finishingMargin === 'hem' && (
+                <div className="absolute inset-2.5 border border-dashed border-white/40 pointer-events-none z-15 flex items-center justify-center">
+                  <span className="font-mono text-[5px] text-white/25 select-none uppercase tracking-[0.2em]">[1.5" Double-Hem Stitch Line]</span>
+                </div>
+              )}
+              {finishingMargin === 'pole-tb' && (
+                <>
+                  <div className="absolute top-0 left-0 right-0 h-4 bg-slate-800/40 border-b border-dashed border-slate-400/50 flex items-center justify-center font-mono text-[5px] text-slate-300/60 pointer-events-none z-15 uppercase tracking-[0.1em]">■ POLE INSERT SLEEVE ■</div>
+                  <div className="absolute bottom-0 left-0 right-0 h-4 bg-slate-800/40 border-t border-dashed border-slate-400/50 flex items-center justify-center font-mono text-[5px] text-slate-300/60 pointer-events-none z-15 uppercase tracking-[0.1em]">■ POLE INSERT SLEEVE ■</div>
+                </>
+              )}
+              {finishingMargin === 'pole-lr' && (
+                <>
+                  <div className="absolute top-0 bottom-0 left-0 w-4 bg-slate-800/40 border-r border-dashed border-slate-400/50 flex items-center justify-center font-mono text-[5px] text-slate-300/60 pointer-events-none z-15 uppercase tracking-[0.1em] [writing-mode:vertical-lr] text-center">■ SLEEVE ■</div>
+                  <div className="absolute top-0 bottom-0 right-0 w-4 bg-slate-800/40 border-l border-dashed border-slate-400/50 flex items-center justify-center font-mono text-[5px] text-slate-300/60 pointer-events-none z-15 uppercase tracking-[0.1em] [writing-mode:vertical-lr] text-center">■ SLEEVE ■</div>
+                </>
+              )}
+
+              {/* Wind Slit Cutout paths */}
+              {showWindSlits && (
+                <div className="absolute inset-0 pointer-events-none z-15 flex items-center justify-around p-8">
+                  {[1, 2, 3, 4].map(idx => (
+                    <svg key={idx} width="16" height="8" viewBox="0 0 16 8" className="opacity-75">
+                      <path d="M 1 1 A 7 7 0 0 0 15 1" fill="none" stroke="#222" strokeWidth="1.5" />
+                    </svg>
+                  ))}
+                </div>
               )}
 
               {/* Metal Grommet Eyelets Punch Simulator */}
