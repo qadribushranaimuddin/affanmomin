@@ -158,9 +158,13 @@ export default function InteractiveSandbox() {
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number } | null>(null);
 
   const canvasRef = useRef<SVGSVGElement>(null);
-  const canvasWidth = 400;
-  const canvasHeight = 250;
-  const safeMargin = 20; // 20px Bleed Margin boundary
+  const [canvasWidth, setCanvasWidth] = useState(400);
+  const [canvasHeight, setCanvasHeight] = useState(250);
+  const [activeBoardPreset, setActiveBoardPreset] = useState<'card' | 'hangtag' | 'poster'>('card');
+  const [snapGridSize, setSnapGridSize] = useState<number>(0);
+  const [hoverCoords, setHoverCoords] = useState<{ x: number; y: number } | null>(null);
+  const [selectedPenNodeIdx, setSelectedPenNodeIdx] = useState<number | null>(null);
+  const safeMargin = 20;
 
   // Pre-flight inspector safety checks
   const preFlightReport = useMemo(() => {
@@ -283,6 +287,35 @@ export default function InteractiveSandbox() {
     setSelectedElementId(newText.id);
   };
 
+  const handleBoardPresetChange = (type: 'card' | 'hangtag' | 'poster') => {
+    setActiveBoardPreset(type);
+    let newW = 400;
+    let newH = 250;
+    let frameW = 380;
+    let frameH = 230;
+
+    if (type === 'hangtag') {
+      newW = 240;
+      newH = 400;
+      frameW = 220;
+      frameH = 380;
+    } else if (type === 'poster') {
+      newW = 400;
+      newH = 400;
+      frameW = 380;
+      frameH = 380;
+    }
+
+    setCanvasWidth(newW);
+    setCanvasHeight(newH);
+
+    setElements(prev => prev.map(el => 
+      el.id === "bg-frame" 
+        ? { ...el, width: frameW, height: frameH }
+        : el
+    ));
+  };
+
   // Object manager arrangement functions
   const deleteElement = (id: string) => {
     setElements(prev => prev.filter(el => el.id !== id));
@@ -348,10 +381,16 @@ export default function InteractiveSandbox() {
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const coords = getCoordinates(e);
+    setHoverCoords({ x: coords.x, y: coords.y });
 
     if (isDragging && selectedElementId) {
       let newX = coords.x - dragOffset.x;
       let newY = coords.y - dragOffset.y;
+
+      if (snapGridSize > 0) {
+        newX = Math.round(newX / snapGridSize) * snapGridSize;
+        newY = Math.round(newY / snapGridSize) * snapGridSize;
+      }
 
       // Smart alignment guidelines & snapping (Canva/Corel style)
       let snapX: number | undefined = undefined;
@@ -395,15 +434,22 @@ export default function InteractiveSandbox() {
       }));
       setDragStart({ x: coords.x, y: coords.y });
     } else if (activeTool === 'pen' && draggedNode) {
+      let targetX = coords.x;
+      let targetY = coords.y;
+      if (snapGridSize > 0) {
+        targetX = Math.round(coords.x / snapGridSize) * snapGridSize;
+        targetY = Math.round(coords.y / snapGridSize) * snapGridSize;
+      }
+
       setPenNodes(prev => prev.map((node, idx) => {
         if (idx !== draggedNode.nodeIndex) return node;
         
         if (draggedNode.handleType === 'anchor') {
-          const deltaX = coords.x - node.x;
-          const deltaY = coords.y - node.y;
+          const deltaX = targetX - node.x;
+          const deltaY = targetY - node.y;
           return {
-            x: coords.x,
-            y: coords.y,
+            x: targetX,
+            y: targetY,
             h1x: node.h1x + deltaX,
             h1y: node.h1y + deltaY,
             h2x: node.h2x + deltaX,
@@ -412,14 +458,14 @@ export default function InteractiveSandbox() {
         } else if (draggedNode.handleType === 'h1') {
           return {
             ...node,
-            h1x: coords.x,
-            h1y: coords.y
+            h1x: targetX,
+            h1y: targetY
           };
         } else if (draggedNode.handleType === 'h2') {
           return {
             ...node,
-            h2x: coords.x,
-            h2y: coords.y
+            h2x: targetX,
+            h2y: targetY
           };
         }
         return node;
@@ -663,6 +709,50 @@ export default function InteractiveSandbox() {
             <p className="text-[10px] text-gray-500 font-mono mt-1">
               Drag, resize, add elements, draw Bézier paths, and pre-flight layouts.
             </p>
+
+            {/* Board Switcher Presets */}
+            <div className="mt-3 space-y-1.5 text-left">
+              <label className="block text-[8px] font-mono uppercase text-gray-500 tracking-wider">
+                // Board Layout Aspect Ratio
+              </label>
+              <div className="grid grid-cols-3 gap-1">
+                {(['card', 'hangtag', 'poster'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleBoardPresetChange(type)}
+                    className={`py-1 rounded-[2px] font-mono text-[8px] uppercase tracking-wider cursor-pointer border transition-colors ${
+                      activeBoardPreset === type 
+                        ? "bg-white text-black font-extrabold border-white" 
+                        : "bg-[#161616] border-white/5 text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Grid Snapping Settings */}
+            <div className="mt-2 space-y-1.5 text-left">
+              <label className="block text-[8px] font-mono uppercase text-gray-500 tracking-wider">
+                // Grid Snapping bounds
+              </label>
+              <div className="grid grid-cols-4 gap-1">
+                {([0, 5, 10, 20] as const).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setSnapGridSize(size)}
+                    className={`py-1 rounded-[2px] font-mono text-[8px] uppercase tracking-wider cursor-pointer border transition-colors ${
+                      snapGridSize === size 
+                        ? "bg-white text-black font-extrabold border-white" 
+                        : "bg-[#161616] border-white/5 text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    {size === 0 ? "Off" : `${size}px`}
+                  </button>
+                ))}
+              </div>
+            </div>
             
             {/* Canvas Base Action Tools */}
             <div className="flex gap-2 mt-3">
@@ -918,6 +1008,24 @@ export default function InteractiveSandbox() {
               onMouseLeave={handleMouseUp}
               onClick={handlePenCanvasClick}
             >
+              {snapGridSize > 0 && (
+                <defs>
+                  <pattern id="grid-pattern" width={snapGridSize} height={snapGridSize} patternUnits="userSpaceOnUse">
+                    <path d={`M ${snapGridSize} 0 L 0 0 0 ${snapGridSize}`} fill="none" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="0.5" />
+                  </pattern>
+                </defs>
+              )}
+
+              {snapGridSize > 0 && (
+                <rect width="100%" height="100%" fill="url(#grid-pattern)" pointerEvents="none" />
+              )}
+
+              {hoverCoords && (
+                <text x="12" y={canvasHeight - 12} fill="#A3A3A3" fontFamily="monospace" fontSize="8" opacity="0.75" pointerEvents="none">
+                  X: {hoverCoords.x}, Y: {hoverCoords.y}
+                </text>
+              )}
+
               {/* Dynamic Snapping guidelines (Corel snap alignment) */}
               {snapLines?.x && (
                 <line x1={snapLines.x} y1={0} x2={snapLines.x} y2={canvasHeight} stroke="#FF007F" strokeWidth="1" strokeDasharray="3,3" />
@@ -973,12 +1081,13 @@ export default function InteractiveSandbox() {
                     cx={node.x}
                     cy={node.y}
                     r="5"
-                    fill="#FF3E00"
+                    fill={selectedPenNodeIdx === idx ? "#FFFF00" : "#FF3E00"}
                     stroke="#ffffff"
                     strokeWidth="1.5"
                     className="cursor-move"
                     onMouseDown={(e) => {
                       e.stopPropagation();
+                      setSelectedPenNodeIdx(idx);
                       setDraggedNode({ nodeIndex: idx, handleType: 'anchor' });
                     }}
                   />
@@ -1124,13 +1233,27 @@ export default function InteractiveSandbox() {
             {penNodes.length > 0 && (
               <div className="border-t border-white/5 pt-2 mt-1.5 flex justify-between items-center">
                 <span className="text-[8px] font-mono text-gray-500 uppercase">PEN PATH ACTIVE</span>
-                <button
-                  onClick={resetPenDrawing}
-                  className="flex items-center gap-1 py-1 px-2 border border-red-500/20 hover:border-red-500 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-[8px] font-mono uppercase rounded-sm cursor-pointer transition-colors"
-                >
-                  <Undo className="w-2.5 h-2.5" />
-                  Clear Nodes
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => {
+                      if (selectedPenNodeIdx !== null) {
+                        setPenNodes(prev => prev.filter((_, idx) => idx !== selectedPenNodeIdx));
+                        setSelectedPenNodeIdx(null);
+                      }
+                    }}
+                    disabled={selectedPenNodeIdx === null}
+                    className="flex items-center gap-1 py-1 px-2 border border-orange-500/20 hover:border-orange-500 disabled:opacity-30 disabled:pointer-events-none bg-orange-500/5 hover:bg-orange-500/10 text-orange-500 text-[8px] font-mono uppercase rounded-sm cursor-pointer transition-colors"
+                  >
+                    Delete Point
+                  </button>
+                  <button
+                    onClick={resetPenDrawing}
+                    className="flex items-center gap-1 py-1 px-2 border border-red-500/20 hover:border-red-500 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-[8px] font-mono uppercase rounded-sm cursor-pointer transition-colors"
+                  >
+                    <Undo className="w-2.5 h-2.5" />
+                    Clear Nodes
+                  </button>
+                </div>
               </div>
             )}
           </div>
