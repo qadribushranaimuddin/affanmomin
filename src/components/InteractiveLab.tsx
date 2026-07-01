@@ -124,24 +124,24 @@ export default function InteractiveLab() {
               <button
                 key={tab.id}
                 onClick={() => handleTabSwitch(tab.id)}
-                className={`flex items-center gap-3.5 p-4 rounded-xl border text-left cursor-pointer transition-all relative overflow-hidden group ${
+                className={`flex flex-col sm:flex-row items-center sm:items-start gap-2.5 sm:gap-3.5 p-2.5 sm:p-4 rounded-xl border text-center sm:text-left cursor-pointer transition-all relative overflow-hidden group w-full min-w-0 ${
                   isSelected
                     ? "bg-[#FF3E00] text-black font-extrabold border-[#FF3E00] shadow-[0_4px_20px_rgba(255,62,0,0.15)]"
                     : "bg-[#111]/40 border-white/5 hover:border-[#FF3E00]/40 text-gray-400 hover:text-white"
                 }`}
               >
-                <div className={`p-2.5 rounded-lg border transition-colors ${
+                <div className={`p-1.5 sm:p-2.5 rounded-lg border transition-colors shrink-0 ${
                   isSelected ? "bg-black/10 border-black/10 text-black" : "bg-[#161616] border-white/5 text-[#FF3E00]"
                 }`}>
-                  <Icon className="w-4 h-4 shrink-0" />
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 </div>
-                <div>
-                  <span className={`block font-mono text-[9px] uppercase tracking-wider ${
+                <div className="min-w-0 w-full">
+                  <span className={`block font-mono text-[7px] sm:text-[9px] uppercase tracking-wider truncate ${
                     isSelected ? "text-black/60" : "text-[#737373]"
                   }`}>
                     {tab.subtitle}
                   </span>
-                  <span className="block text-xs font-bold uppercase tracking-tight leading-none mt-1">
+                  <span className="block text-[10px] sm:text-xs font-bold uppercase tracking-tight leading-none mt-1 truncate">
                     {tab.label}
                   </span>
                 </div>

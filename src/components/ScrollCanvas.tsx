@@ -1356,7 +1356,7 @@ export default function ScrollCanvas({ theme, style }: { theme: "dark" | "light"
   const scrollSpeedRef = useRef<number>(0);
 
   return (
-    <div className="fixed inset-0 w-full h-full pointer-events-none z-0" style={{ opacity: 0.02 }}>
+    <div className="fixed inset-0 w-full h-full pointer-events-none z-0">
       <Canvas
         gl={{ antialias: true, alpha: true }}
         dpr={[1, 1.5]}

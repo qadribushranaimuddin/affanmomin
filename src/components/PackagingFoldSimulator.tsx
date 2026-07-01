@@ -700,7 +700,7 @@ export default function PackagingFoldSimulator() {
       <div className="flex items-center justify-between font-mono text-[8px] border border-brand-border/40 bg-brand-bg/40 p-2 mb-2 select-none">
         <span className="text-brand-muted uppercase flex items-center gap-1">
           <Camera className="w-3 text-brand-accent shrink-0" />
-          Camera Preset coordinates:
+          Camera Presets:
         </span>
         <div className="flex gap-2">
           {(["flat", "iso", "front", "side", "under"] as ViewportPreset[]).map((cam) => (

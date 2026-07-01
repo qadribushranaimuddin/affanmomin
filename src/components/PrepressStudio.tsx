@@ -588,7 +588,7 @@ export default function PrepressStudio() {
                           : "bg-black/40 text-gray-600 border-white/5"
                       }`}
                     >
-                      Cyan Plate: {cmykChannels.cyan ? "ON" : "OFF"}
+                      Cyan: {cmykChannels.cyan ? "ON" : "OFF"}
                     </button>
                     <button
                       onClick={() => setCmykChannels(prev => ({ ...prev, magenta: !prev.magenta }))}
@@ -598,7 +598,7 @@ export default function PrepressStudio() {
                           : "bg-black/40 text-gray-600 border-white/5"
                       }`}
                     >
-                      Magenta Plate: {cmykChannels.magenta ? "ON" : "OFF"}
+                      Magenta: {cmykChannels.magenta ? "ON" : "OFF"}
                     </button>
                     <button
                       onClick={() => setCmykChannels(prev => ({ ...prev, yellow: !prev.yellow }))}
@@ -608,7 +608,7 @@ export default function PrepressStudio() {
                           : "bg-black/40 text-gray-600 border-white/5"
                       }`}
                     >
-                      Yellow Plate: {cmykChannels.yellow ? "ON" : "OFF"}
+                      Yellow: {cmykChannels.yellow ? "ON" : "OFF"}
                     </button>
                     <button
                       onClick={() => setCmykChannels(prev => ({ ...prev, black: !prev.black }))}
@@ -618,7 +618,7 @@ export default function PrepressStudio() {
                           : "bg-black/40 text-gray-600 border-white/5"
                       }`}
                     >
-                      Key (Black) Plate: {cmykChannels.black ? "ON" : "OFF"}
+                      Black (K): {cmykChannels.black ? "ON" : "OFF"}
                     </button>
                   </div>
                 </div>
