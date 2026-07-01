@@ -38,6 +38,8 @@ interface CanvasElement {
   fontFamily: string;
   isLocked: boolean;
   isHidden: boolean;
+  curveRadius?: number;
+  activeFilter?: 'none' | 'duotone' | 'neon' | 'halftone' | 'engraved';
 }
 
 interface PathNode {
@@ -582,21 +584,45 @@ export default function InteractiveSandbox() {
   const renderSVGElement = (el: CanvasElement) => {
     if (el.isHidden) return null;
 
+    const filterId = el.activeFilter && el.activeFilter !== 'none' ? `url(#filter-${el.activeFilter})` : undefined;
+
     if (el.type === 'text') {
+      const isCurved = el.curveRadius && el.curveRadius > 0;
+      const r = el.curveRadius || 120;
+      const pathD = `M 0,${r} A ${r},${r} 0 0,1 ${el.width},${r}`;
+
       return (
-        <g key={el.id} transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`}>
-          <text
-            x={0}
-            y={el.height - 10}
-            fill={el.color}
-            fontSize={el.fontSize}
-            fontFamily={el.fontFamily}
-            letterSpacing={el.letterSpacing}
-            className="select-none font-bold"
-            onMouseDown={(e) => handleMouseDown(e, el.id)}
-          >
-            {el.content}
-          </text>
+        <g key={el.id} transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`} filter={filterId}>
+          {isCurved ? (
+            <>
+              <path id={`path-${el.id}`} d={pathD} fill="none" stroke="none" />
+              <text
+                fill={el.color}
+                fontSize={el.fontSize}
+                fontFamily={el.fontFamily}
+                letterSpacing={el.letterSpacing}
+                className="select-none font-bold text-center"
+                onMouseDown={(e) => handleMouseDown(e, el.id)}
+              >
+                <textPath href={`#path-${el.id}`} startOffset="50%" textAnchor="middle">
+                  {el.content}
+                </textPath>
+              </text>
+            </>
+          ) : (
+            <text
+              x={0}
+              y={el.height - 10}
+              fill={el.color}
+              fontSize={el.fontSize}
+              fontFamily={el.fontFamily}
+              letterSpacing={el.letterSpacing}
+              className="select-none font-bold"
+              onMouseDown={(e) => handleMouseDown(e, el.id)}
+            >
+              {el.content}
+            </text>
+          )}
         </g>
       );
     }
@@ -606,6 +632,7 @@ export default function InteractiveSandbox() {
         <g 
           key={el.id} 
           transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`}
+          filter={filterId}
           onMouseDown={(e) => handleMouseDown(e, el.id)}
         >
           {/* Custom vector preset helix logo */}
@@ -617,75 +644,80 @@ export default function InteractiveSandbox() {
     }
 
     if (el.type === 'shape') {
-      // Decode uploaded SVG, or draw library shapes
-      if (el.content.startsWith("custom-svg:")) {
-        const decoded = atob(el.content.split(":")[1]);
-        return (
-          <g 
-            key={el.id} 
-            transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`}
-            onMouseDown={(e) => handleMouseDown(e, el.id)}
-            dangerouslySetInnerHTML={{ __html: decoded }}
-          />
-        );
-      }
+      const getShapeElement = () => {
+        // Decode uploaded SVG, or draw library shapes
+        if (el.content.startsWith("custom-svg:")) {
+          const decoded = atob(el.content.split(":")[1]);
+          return (
+            <g 
+              transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`}
+              onMouseDown={(e) => handleMouseDown(e, el.id)}
+              dangerouslySetInnerHTML={{ __html: decoded }}
+            />
+          );
+        }
 
-      if (el.content === "border-frame") {
-        return (
-          <rect
-            key={el.id}
-            x={el.x}
-            y={el.y}
-            width={el.width}
-            height={el.height}
-            fill={el.color}
-            stroke={el.strokeColor}
-            strokeWidth={el.strokeWidth}
-            onMouseDown={(e) => handleMouseDown(e, el.id)}
-          />
-        );
-      }
+        if (el.content === "border-frame") {
+          return (
+            <rect
+              x={el.x}
+              y={el.y}
+              width={el.width}
+              height={el.height}
+              fill={el.color}
+              stroke={el.strokeColor}
+              strokeWidth={el.strokeWidth}
+              onMouseDown={(e) => handleMouseDown(e, el.id)}
+            />
+          );
+        }
 
-      if (el.content === "badge") {
-        return (
-          <polygon
-            key={el.id}
-            points={`${el.x},${el.y + el.height / 2} ${el.x + el.width / 4},${el.y} ${el.x + (el.width * 3) / 4},${el.y} ${el.x + el.width},${el.y + el.height / 2} ${el.x + (el.width * 3) / 4},${el.y + el.height} ${el.x + el.width / 4},${el.y + el.height}`}
-            fill={el.color}
-            stroke={el.strokeColor}
-            strokeWidth={el.strokeWidth}
-            onMouseDown={(e) => handleMouseDown(e, el.id)}
-          />
-        );
-      }
+        if (el.content === "badge") {
+          return (
+            <polygon
+              points={`${el.x},${el.y + el.height / 2} ${el.x + el.width / 4},${el.y} ${el.x + (el.width * 3) / 4},${el.y} ${el.x + el.width},${el.y + el.height / 2} ${el.x + (el.width * 3) / 4},${el.y + el.height} ${el.x + el.width / 4},${el.y + el.height}`}
+              fill={el.color}
+              stroke={el.strokeColor}
+              strokeWidth={el.strokeWidth}
+              onMouseDown={(e) => handleMouseDown(e, el.id)}
+            />
+          );
+        }
 
-      if (el.content === "star") {
-        return (
-          <polygon
-            key={el.id}
-            points={`${el.x + el.width/2},${el.y} ${el.x + el.width*0.65},${el.y + el.height*0.35} ${el.x + el.width},${el.y + el.height*0.35} ${el.x + el.width*0.75},${el.y + el.height*0.6} ${el.x + el.width*0.85},${el.y + el.height} ${el.x + el.width/2},${el.y + el.height*0.75} ${el.x + el.width*0.15},${el.y + el.height} ${el.x + el.width*0.25},${el.y + el.height*0.6} ${el.x},${el.y + el.height*0.35} ${el.x + el.width*0.35},${el.y + el.height*0.35}`}
-            fill={el.color}
-            stroke={el.strokeColor}
-            strokeWidth={el.strokeWidth}
-            onMouseDown={(e) => handleMouseDown(e, el.id)}
-          />
-        );
-      }
+        if (el.content === "star") {
+          return (
+            <polygon
+              points={`${el.x + el.width/2},${el.y} ${el.x + el.width*0.65},${el.y + el.height*0.35} ${el.x + el.width},${el.y + el.height*0.35} ${el.x + el.width*0.75},${el.y + el.height*0.6} ${el.x + el.width*0.85},${el.y + el.height} ${el.x + el.width/2},${el.y + el.height*0.75} ${el.x + el.width*0.15},${el.y + el.height} ${el.x + el.width*0.25},${el.y + el.height*0.6} ${el.x},${el.y + el.height*0.35} ${el.x + el.width*0.35},${el.y + el.height*0.35}`}
+              fill={el.color}
+              stroke={el.strokeColor}
+              strokeWidth={el.strokeWidth}
+              onMouseDown={(e) => handleMouseDown(e, el.id)}
+            />
+          );
+        }
 
-      if (el.content === "divider") {
-        return (
-          <line
-            key={el.id}
-            x1={el.x}
-            y1={el.y + el.height / 2}
-            x2={el.x + el.width}
-            y2={el.y + el.height / 2}
-            stroke={el.strokeColor}
-            strokeWidth={el.strokeWidth}
-            onMouseDown={(e) => handleMouseDown(e, el.id)}
-          />
-        );
-      }
+        if (el.content === "divider") {
+          return (
+            <line
+              x1={el.x}
+              y1={el.y + el.height / 2}
+              x2={el.x + el.width}
+              y2={el.y + el.height / 2}
+              stroke={el.strokeColor}
+              strokeWidth={el.strokeWidth}
+              onMouseDown={(e) => handleMouseDown(e, el.id)}
+            />
+          );
+        }
+
+        return null;
+      };
+
+      return (
+        <g key={el.id} filter={filterId}>
+          {getShapeElement()}
+        </g>
+      );
     }
 
     return null;
@@ -838,6 +870,19 @@ export default function InteractiveSandbox() {
                       />
                     </div>
                   </div>
+
+                  <div className="mt-2">
+                    <label className="text-[8px] font-mono text-gray-400 uppercase block">Text Curvature Arc: {selectedElement.curveRadius ? `${selectedElement.curveRadius}px` : "Straight (Flat)"}</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="300"
+                      step="10"
+                      value={selectedElement.curveRadius || 0}
+                      onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, curveRadius: Number(e.target.value) } : el))}
+                      className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer mt-1"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -905,6 +950,30 @@ export default function InteractiveSandbox() {
                       style={{ backgroundColor: col.hex }}
                       title={col.name}
                     />
+                  ))}
+                </div>
+              </div>
+
+              {/* SVG Filter Effects gallery */}
+              <div className="border-t border-white/5 pt-2 mt-1">
+                <label className="text-[8px] font-mono text-gray-400 uppercase block mb-1">Vector Artwork Filters</label>
+                <div className="grid grid-cols-3 gap-1">
+                  {[
+                    { id: 'none', label: 'None' },
+                    { id: 'duotone', label: 'Duotone' },
+                    { id: 'neon', label: 'Neon Glow' },
+                    { id: 'halftone', label: 'Halftone' },
+                    { id: 'engraved', label: 'Engraved' }
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, activeFilter: f.id as any } : el))}
+                      className={`text-[8px] font-mono py-1 rounded-sm border cursor-pointer transition-colors ${
+                        (selectedElement.activeFilter || 'none') === f.id ? "border-[#FF3E00] text-[#FF3E00] font-bold bg-[#FF3E00]/5" : "border-white/5 text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1008,13 +1077,45 @@ export default function InteractiveSandbox() {
               onMouseLeave={handleMouseUp}
               onClick={handlePenCanvasClick}
             >
-              {snapGridSize > 0 && (
-                <defs>
+              <defs>
+                {snapGridSize > 0 && (
                   <pattern id="grid-pattern" width={snapGridSize} height={snapGridSize} patternUnits="userSpaceOnUse">
                     <path d={`M ${snapGridSize} 0 L 0 0 0 ${snapGridSize}`} fill="none" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="0.5" />
                   </pattern>
-                </defs>
-              )}
+                )}
+
+                {/* Duotone Filter */}
+                <filter id="filter-duotone">
+                  <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0
+                                                       0.2126 0.7152 0.0722 0 0
+                                                       0.2126 0.7152 0.0722 0 0
+                                                       0      0      0      1 0" />
+                  <feComponentTransfer>
+                    <feFuncR type="table" tableValues="0.05 0.95" />
+                    <feFuncG type="table" tableValues="0.08 0.45" />
+                    <feFuncB type="table" tableValues="0.38 0.9" />
+                  </feComponentTransfer>
+                </filter>
+
+                {/* Neon Glow Filter */}
+                <filter id="filter-neon" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                {/* Halftone Screen Filter */}
+                <filter id="filter-halftone">
+                  <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 35 -15" />
+                </filter>
+
+                {/* Laser Engraved Filter */}
+                <filter id="filter-engraved">
+                  <feConvolveMatrix order="3" kernelMatrix="1 -1 1 -1 8 -1 1 -1 1" />
+                </filter>
+              </defs>
 
               {snapGridSize > 0 && (
                 <rect width="100%" height="100%" fill="url(#grid-pattern)" pointerEvents="none" />
