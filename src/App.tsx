@@ -950,7 +950,7 @@ export default function App() {
         </>
       )}
       <Analytics />
-      <ScrollCanvas />
+      <ScrollCanvas theme={theme} />
     </div>
   );
 }
