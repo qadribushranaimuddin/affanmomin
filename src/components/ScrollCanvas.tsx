@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Line, Stars, Text } from "@react-three/drei";
 import * as THREE from "three";
@@ -7,6 +7,35 @@ interface SceneProps {
   scrollProgressRef: React.MutableRefObject<number>;
   scrollSpeedRef: React.MutableRefObject<number>;
   theme: "dark" | "light";
+}
+
+// Option 5: Helper function to generate a procedural brushed metal texture Normal/Bump Map
+function createBrushedMetalTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    // Fill neutral gray
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(0, 0, 256, 256);
+    
+    // Draw horizontal micro-scratches
+    ctx.strokeStyle = "#8a8a8a";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 60; i++) {
+      const y = Math.random() * 256;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(256, y);
+      ctx.stroke();
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(2, 2);
+  return texture;
 }
 
 // Sub-Component 1: Folding Origami Box (Concept 1)
@@ -62,27 +91,20 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
 
   const renderBoxPanels = () => (
     <>
-      {/* Front Panel with printed label */}
       <mesh position={[0, 0, 0.5]} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 0.02]} />
         <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
       </mesh>
-
-      {/* Back Panel with printed calibration spec */}
       <mesh position={[0, 0, -0.5]} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 0.02]} />
         <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
       </mesh>
-
-      {/* Folding Flap Left */}
       <group position={[-0.5, 0, 0]} rotation={[0, -angle, 0]}>
         <mesh position={[-0.5, 0, 0]} castShadow receiveShadow>
           <boxGeometry args={[1, 1, 0.02]} />
           <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
         </mesh>
       </group>
-
-      {/* Folding Flap Right */}
       <group position={[0.5, 0, 0]} rotation={[0, angle, 0]}>
         <mesh position={[0.5, 0, 0]} castShadow receiveShadow>
           <boxGeometry args={[1, 1, 0.02]} />
@@ -94,11 +116,8 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
 
   return (
     <group ref={meshRef} position={[0, 0, -2]} scale={[scale, scale, scale]}>
-      
-      {/* Dynamic 3D Space CMYK Plate Separation on movement */}
       {speedSplit > 0.005 ? (
         <>
-          {/* Cyan Channel Offset */}
           <group position={[-speedSplit * 0.4, speedSplit * 0.4, 0]}>
             <Line
               points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]}
@@ -108,7 +127,6 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
               opacity={opacity * 0.7}
             />
           </group>
-          {/* Magenta Channel Offset */}
           <group position={[speedSplit * 0.4, -speedSplit * 0.4, 0]}>
             <Line
               points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]}
@@ -118,7 +136,6 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
               opacity={opacity * 0.7}
             />
           </group>
-          {/* Base Solid Plate Panels */}
           {renderBoxPanels()}
         </>
       ) : (
@@ -132,17 +149,9 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
         </>
       )}
 
-      {/* Printed typography directly on box faces (origami blueprint labels) */}
       {opacity > 0 && (
         <group position={[0, 0, 0.515]}>
-          <Text
-            fontSize={0.065}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-            transparent
-            opacity={opacity * 0.95}
-          >
+          <Text fontSize={0.065} color="#ffffff" anchorX="center" anchorY="middle" transparent opacity={opacity * 0.95}>
             MOMIN // SPEC
           </Text>
         </group>
@@ -150,34 +159,18 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
 
       {opacity > 0 && (
         <group position={[0, 0, -0.515]} rotation={[0, Math.PI, 0]}>
-          <Text
-            fontSize={0.065}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-            transparent
-            opacity={opacity * 0.95}
-          >
+          <Text fontSize={0.065} color="#ffffff" anchorX="center" anchorY="middle" transparent opacity={opacity * 0.95}>
             TRIM_LINE_OK
           </Text>
         </group>
       )}
 
-      {/* Technical Blueprint Dimension Annotations */}
       {opacity > 0 && (
         <group position={[0, -0.7, 0.5]}>
           <Line points={[[-0.5, 0, 0], [0.5, 0, 0]]} color={wireframeColor} lineWidth={1} transparent opacity={opacity * 0.4} />
           <Line points={[[-0.5, 0.05, 0], [-0.5, -0.05, 0]]} color={wireframeColor} lineWidth={1} transparent opacity={opacity * 0.4} />
           <Line points={[[0.5, 0.05, 0], [0.5, -0.05, 0]]} color={wireframeColor} lineWidth={1} transparent opacity={opacity * 0.4} />
-          <Text
-            position={[0, -0.15, 0]}
-            fontSize={0.06}
-            color={labelColor}
-            anchorX="center"
-            anchorY="middle"
-            transparent
-            opacity={opacity * 0.7}
-          >
+          <Text position={[0, -0.15, 0]} fontSize={0.06} color={labelColor} anchorX="center" anchorY="middle" transparent opacity={opacity * 0.7}>
             W: 100mm
           </Text>
         </group>
@@ -188,16 +181,7 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
           <Line points={[[0, -0.5, 0], [0, 0.5, 0]]} color={wireframeColor} lineWidth={1} transparent opacity={opacity * 0.4} />
           <Line points={[[-0.05, -0.5, 0], [0.05, -0.5, 0]]} color={wireframeColor} lineWidth={1} transparent opacity={opacity * 0.4} />
           <Line points={[[-0.05, 0.5, 0], [0.05, 0.5, 0]]} color={wireframeColor} lineWidth={1} transparent opacity={opacity * 0.4} />
-          <Text
-            position={[0.18, 0, 0]}
-            rotation={[0, 0, -Math.PI / 2]}
-            fontSize={0.06}
-            color={labelColor}
-            anchorX="center"
-            anchorY="middle"
-            transparent
-            opacity={opacity * 0.7}
-          >
+          <Text position={[0.18, 0, 0]} rotation={[0, 0, -Math.PI / 2]} fontSize={0.06} color={labelColor} anchorX="center" anchorY="middle" transparent opacity={opacity * 0.7}>
             H: 100mm
           </Text>
         </group>
@@ -216,6 +200,9 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
   
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.2) * 0.8;
+
+  // Generate Canvas texture normal map once (Option 5)
+  const metalBumpTexture = useMemo(() => createBrushedMetalTexture(), []);
 
   // Continuous Fluid Ink Particle Ribbon (Option 3)
   const particleCount = 36;
@@ -246,13 +233,10 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
     const rangeEnd = 0.52;
     const activeProgress = Math.max(0, Math.min(1, (progress - rangeStart) / (rangeEnd - rangeStart)));
 
-    // Mechanical vibration offset proportional to scroll speed (Option 3 Upgrade)
     const vibration = Math.sin(state.clock.elapsedTime * 80) * scrollSpeedRef.current * 0.07;
 
     if (rollerGroupRef.current) {
       rollerGroupRef.current.rotation.z = -activeProgress * Math.PI * 4;
-      
-      // Squeeze position slightly with vibration
       rollerGroupRef.current.position.y = 0.2 + vibration;
 
       const opacity = progress >= 0.18 && progress <= 0.62 
@@ -274,9 +258,7 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
     
     pts.forEach((p, idx) => {
       p.t += p.speed * speedMultiplier;
-      if (p.t > Math.PI * 2) {
-        p.t = 0;
-      }
+      if (p.t > Math.PI * 2) p.t = 0;
       
       p.x = -1.4 + (p.t / (Math.PI * 2)) * 2.8;
       p.y = Math.sin(p.t * 3.5) * 0.38 - 0.22;
@@ -289,23 +271,35 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
     });
   });
 
-  const cylinderColor = theme === "dark" ? "#222222" : "#dddddd";
+  const cylinderColor = theme === "dark" ? "#2a2a2a" : "#e0e0e0";
   const paperColor = theme === "dark" ? "#fcfaf2" : "#111111";
   const opacity = smoothProgressRef.current >= 0.18 && smoothProgressRef.current <= 0.62 ? 1 : 0;
 
   return (
     <group ref={rollerGroupRef} position={[0, 0.2, -3]} scale={[scale, scale, scale]}>
-      {/* Heavy Cylinders */}
+      {/* Option 5: Metal Cylinders with Procedural Brushed Normal Texture */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[-1.2, 0, 0]}>
         <cylinderGeometry args={[0.6, 0.6, 2.2, 32]} />
-        <meshStandardMaterial color={cylinderColor} roughness={0.3} metalness={0.8} />
+        <meshStandardMaterial
+          color={cylinderColor}
+          roughness={0.2}
+          metalness={0.95}
+          bumpMap={metalBumpTexture}
+          bumpScale={0.015}
+        />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[1.2, 0, 0]}>
         <cylinderGeometry args={[0.6, 0.6, 2.2, 32]} />
-        <meshStandardMaterial color={cylinderColor} roughness={0.3} metalness={0.8} />
+        <meshStandardMaterial
+          color={cylinderColor}
+          roughness={0.2}
+          metalness={0.95}
+          bumpMap={metalBumpTexture}
+          bumpScale={0.015}
+        />
       </mesh>
 
-      {/* Cyan/Magenta/Yellow Ink Roller Highlights */}
+      {/* Cyan Ink Roller Highlight */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.8, -0.5]}>
         <cylinderGeometry args={[0.4, 0.4, 2, 32]} />
         <meshPhysicalMaterial color="#06b6d4" roughness={0.1} metalness={0.2} />
@@ -321,12 +315,7 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
       {opacity > 0 && (
         <group ref={sphereGroupRef}>
           {particlesRef.current.map((pt, idx) => (
-            <group
-              key={idx}
-              ref={(el) => {
-                if (el) sphereRefs.current[idx] = el;
-              }}
-            >
+            <group key={idx} ref={(el) => { if (el) sphereRefs.current[idx] = el; }}>
               <mesh>
                 <sphereGeometry args={[0.038, 8, 8]} />
                 <meshBasicMaterial color={pt.color} transparent opacity={opacity * 0.75} />
@@ -334,6 +323,22 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
             </group>
           ))}
         </group>
+      )}
+
+      {/* Option 3: Frosted Glass Refraction Sheet overlay */}
+      {opacity > 0 && (
+        <mesh position={[0, 0.1, 0.75]}>
+          <planeGeometry args={[3.6, 2.2]} />
+          <meshPhysicalMaterial
+            transmission={0.88}
+            roughness={0.18}
+            thickness={0.5}
+            ior={1.42}
+            transparent
+            opacity={opacity * 0.38}
+            color={theme === "dark" ? "#111111" : "#ffffff"}
+          />
+        </mesh>
       )}
     </group>
   );
@@ -357,7 +362,6 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
     [-2, 2, -7], [2, 2, -5], [-3, -1, -9]
   ] as [number, number, number][];
 
-  // Magnetic backing grid elements (25 coordinate plus marks)
   const gridPositions = useRef(
     Array.from({ length: 25 }).map((_, i) => {
       const row = Math.floor(i / 5) - 2;
@@ -403,6 +407,9 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
       });
     }
 
+    // Speed-based split and disintegration factor (Option 4)
+    const speedSplit = Math.min(0.4, scrollSpeedRef.current * 14);
+
     // Dynamic mouse attraction warping physics
     const targetPointer = new THREE.Vector3(pointer.x * 2.5, pointer.y * 2.5, -6);
     offsetsRef.current.forEach((nodePos, idx) => {
@@ -415,21 +422,29 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
         nodePos.addScaledVector(pullDir, pullStrength);
       }
       
+      // Option 4: Disintegrate (explode coordinates) based on scroll speed
+      if (speedSplit > 0.02) {
+        const explodeDir = new THREE.Vector3(
+          Math.sin(idx * 45) * speedSplit * 1.8,
+          Math.cos(idx * 75) * speedSplit * 1.8,
+          Math.sin(idx * 90) * speedSplit * 1.8
+        );
+        nodePos.add(explodeDir);
+      }
+
       const homeDir = new THREE.Vector3(...orig).sub(nodePos);
-      nodePos.addScaledVector(homeDir, 0.05);
+      nodePos.addScaledVector(homeDir, 0.05); // Snap back slowly when static
     });
 
     // Magnetic backing needle grid rotation to face pointer coordinates
     gridPositions.current.forEach((pos, idx) => {
       const compassGroup = compassRefs.current[idx];
       if (compassGroup) {
-        // Calculate angle from plus mark to pointer
         const pointerPos = new THREE.Vector3(pointer.x * 3, pointer.y * 3, -9);
         const dx = pointerPos.x - pos.x;
         const dy = pointerPos.y - pos.y;
         const angle = Math.atan2(dy, dx);
         
-        // Smoothly rotate plus mark toward cursor
         compassGroup.rotation.z = THREE.MathUtils.lerp(compassGroup.rotation.z, angle, 0.08);
       }
     });
@@ -465,18 +480,15 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
 
   return (
     <group ref={groupRef} position={[0, 0, -5]} scale={[scale, scale, scale]}>
-      {/* Magnetic Backing Field Plus Mark Grid (Option 3 Upgrade) */}
+      {/* Magnetic Backing Field Plus Mark Grid */}
       {opacity > 0 && (
         <group ref={magneticGridRef}>
           {gridPositions.current.map((pos, idx) => (
             <group
               key={`grid-needle-${idx}`}
               position={[pos.x, pos.y, pos.z]}
-              ref={(el) => {
-                if (el) compassRefs.current[idx] = el;
-              }}
+              ref={(el) => { if (el) compassRefs.current[idx] = el; }}
             >
-              {/* Draw a calibration '+' mark */}
               <Line points={[[-0.15, 0, 0], [0.15, 0, 0]]} color={lineColor} lineWidth={1.2} transparent opacity={opacity * 0.25} />
               <Line points={[[0, -0.15, 0], [0, 0.15, 0]]} color={lineColor} lineWidth={1.2} transparent opacity={opacity * 0.25} />
             </group>
@@ -658,9 +670,9 @@ function CMYKRegistrationScene({ scrollProgressRef, theme }: SceneProps) {
   );
 }
 
-// Scene Director Canvas Camera controls
+// Scene Director Canvas Camera controls with Gyroscopic Mouse Parallax (Option 1)
 function CameraDirector({ scrollProgressRef }: { scrollProgressRef: React.MutableRefObject<number> }) {
-  const { camera } = useThree();
+  const { camera, pointer } = useThree();
   
   const smoothProgressRef = useRef(0);
   const velocityRef = useRef(0);
@@ -677,33 +689,42 @@ function CameraDirector({ scrollProgressRef }: { scrollProgressRef: React.Mutabl
     
     const progress = smoothProgressRef.current;
 
-    // Dynamic camera focal shifts based on progress
+    // Base target coordinates based on scroll section
+    let targetX = 0;
+    let targetY = 0;
+
     if (progress < 0.25) {
-      camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.05);
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0, 0.05);
+      targetX = 0;
+      targetY = 0;
     } else if (progress < 0.50) {
-      camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0.5, 0.05);
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0.2, 0.05);
+      targetX = 0.5;
+      targetY = 0.2;
     } else if (progress < 0.75) {
-      camera.position.x = THREE.MathUtils.lerp(camera.position.x, -0.4, 0.05);
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, -0.3, 0.05);
+      targetX = -0.4;
+      targetY = -0.3;
     } else {
-      camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.05);
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0, 0.05);
+      targetX = 0;
+      targetY = 0;
     }
+
+    // Option 1: Combine base target coordinate with pointer-guided Gyroscopic Parallax
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX + pointer.x * 0.45, 0.05);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY + pointer.y * 0.35, 0.05);
+    
+    camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, -pointer.x * 0.08, 0.05);
+    camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, pointer.y * 0.08, 0.05);
   });
 
   return null;
 }
 
-// Dynamic Spotlight with mouse following shadow sweeps (Option 2)
+// Dynamic Spotlight with mouse following shadow sweeps
 function DynamicStudioSpotlight() {
   const lightRef = useRef<THREE.SpotLight>(null);
   const { pointer } = useThree();
 
   useFrame(() => {
     if (lightRef.current) {
-      // Smoothly transition spotlight position to track cursor coordinate sweeps
       lightRef.current.position.x = THREE.MathUtils.lerp(lightRef.current.position.x, pointer.x * 4.5, 0.08);
       lightRef.current.position.y = THREE.MathUtils.lerp(lightRef.current.position.y, pointer.y * 4.5, 0.08);
     }
@@ -742,7 +763,7 @@ export default function ScrollCanvas({ theme }: { theme: "dark" | "light" }) {
         <directionalLight position={[-5, 5, -5]} intensity={0.5} />
         <pointLight position={[0, 2, -2]} intensity={1.5} color="#FF3E00" />
         
-        {/* Interactive Pointer-following Studio Spotlight (Option 2) */}
+        {/* Interactive Pointer-following Studio Spotlight */}
         <DynamicStudioSpotlight />
         
         <CameraDirector scrollProgressRef={scrollProgressRef} />
