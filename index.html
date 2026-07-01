@@ -33,35 +33,92 @@
   <meta property="twitter:description" content="Precision vector layout engineering and interactive postpress packaging fold simulation decks." />
   <meta property="twitter:image" content="https://affanmomin.vercel.app/og-preview.png" />
   
-  <!-- Structured Data JSON-LD for Google Search Rich Snippets -->
+  <!-- Structured Data JSON-LD for Google Search Rich Snippets & Sitelinks -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Person",
-      "name": "Momin Affan",
-      "jobTitle": "Creative Graphic Designer & Prepress Specialist",
-      "url": "https://affanmomin.vercel.app/",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Bhiwandi",
-        "addressRegion": "Maharashtra",
-        "addressCountry": "India"
-      },
-      "sameAs": [
-        "https://github.com/qadribushranaimuddin",
-        "mailto:iftekharaffan0@gmail.com"
-      ],
-      "knowsAbout": [
-        "Graphic Design",
-        "Vector Layout Calibration",
-        "CorelDRAW Layouts",
-        "Prepress Studio",
-        "Packaging Fold Simulations",
-        "Brand Identity Sandbox"
-      ],
-      "description": "Professional Creative Graphic Designer based in Bhiwandi, Thane. Specialized in precision vector layout drafting, retail product label design, and interactive postpress simulations."
+      "@graph": [
+        {
+          "@type": "Person",
+          "@id": "https://affanmomin.vercel.app/#person",
+          "name": "Momin Affan",
+          "jobTitle": "Creative Graphic Designer & Prepress Specialist",
+          "url": "https://affanmomin.vercel.app/",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Bhiwandi",
+            "addressRegion": "Maharashtra",
+            "postalCode": "421302",
+            "addressCountry": "India"
+          },
+          "sameAs": [
+            "https://github.com/qadribushranaimuddin",
+            "mailto:iftekharaffan0@gmail.com"
+          ],
+          "knowsAbout": [
+            "Graphic Design",
+            "Vector Layout Calibration",
+            "CorelDRAW Layouts",
+            "Prepress Studio",
+            "Packaging Fold Simulations",
+            "Brand Identity Sandbox",
+            "Offset Printing Pre-flight",
+            "Moiré Pattern Analysis"
+          ],
+          "description": "Professional Creative Graphic Designer based in Bhiwandi, Thane. Specialized in precision vector layout drafting, retail product label design, and interactive postpress simulations."
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://affanmomin.vercel.app/#website",
+          "url": "https://affanmomin.vercel.app/",
+          "name": "Momin Affan Portfolio",
+          "publisher": {
+            "@id": "https://affanmomin.vercel.app/#person"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://affanmomin.vercel.app/#prepress-sandbox",
+          "name": "Interactive Prepress Calibration Sandbox",
+          "applicationCategory": "DesignApplication",
+          "operatingSystem": "All",
+          "browserRequirements": "Requires WebGL/HTML5 Canvas support.",
+          "url": "https://affanmomin.vercel.app/#sandbox",
+          "description": "An interactive digital prepress studio to adjust grommet margins, add wind slit stamps, and perform out-of-gamut CMYK color calibrations for banner prints.",
+          "creator": {
+            "@id": "https://affanmomin.vercel.app/#person"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://affanmomin.vercel.app/#packaging-simulator",
+          "name": "3D Tactile Postpress Carton Folding Simulator",
+          "applicationCategory": "DesignApplication",
+          "operatingSystem": "All",
+          "browserRequirements": "Requires WebGL/HTML5 support.",
+          "url": "https://affanmomin.vercel.app/#sandbox",
+          "description": "A real-time 3D folding carton simulator showcasing crease stress fatigue heatmaps, die-cut window layouts, and 3D product cavity specs.",
+          "creator": {
+            "@id": "https://affanmomin.vercel.app/#person"
+          }
+        }
+      ]
     }
   </script>
+
+  <!-- Dublin Core Metadata (Highly valued by academic/professional indexers) -->
+  <meta name="dcterms.title" content="Momin Affan // Creative Graphic Designer & Prepress Specialist" />
+  <meta name="dcterms.creator" content="Momin Affan" />
+  <meta name="dcterms.description" content="Portfolio of Momin Affan, specializing in precision vector layout calibration, packaging templates, brand identity engineering, and interactive prepress simulations." />
+  <meta name="dcterms.subject" content="Graphic Design, CorelDRAW, Prepress, 3D simulation, Bhiwandi" />
+  <meta name="dcterms.identifier" content="https://affanmomin.vercel.app/" />
+  <meta name="dcterms.language" content="en" />
+
+  <!-- Geographic Position Metadata (For Local Business / Geographic Relevance in India/Bhiwandi searches) -->
+  <meta name="geo.region" content="IN-MH" />
+  <meta name="geo.placename" content="Bhiwandi" />
+  <meta name="geo.position" content="19.2934;73.0617" />
+  <meta name="ICBM" content="19.2934, 73.0617" />
 
   <!-- Google Search Console Site Owner Verification -->
   <meta name="google-site-verification" content="9YHCoqdhwYU54kZYSvtZjfjTEIGPhl8pSC3Llp7FoXM" />
