@@ -5,11 +5,12 @@ import * as THREE from "three";
 
 interface SceneProps {
   scrollProgressRef: React.MutableRefObject<number>;
+  scrollSpeedRef: React.MutableRefObject<number>;
   theme: "dark" | "light";
 }
 
 // Sub-Component 1: Folding Origami Box (Concept 1)
-function OrigamiBox({ scrollProgressRef, theme }: SceneProps) {
+function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const meshRef = useRef<THREE.Group>(null);
   
   // Spring dynamics refs
@@ -20,7 +21,6 @@ function OrigamiBox({ scrollProgressRef, theme }: SceneProps) {
   const scale = Math.min(1.2, viewport.width / 4.8) * 0.9;
 
   useFrame(() => {
-    // Spring physics integration
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
     const stiffness = 0.035;
@@ -52,13 +52,16 @@ function OrigamiBox({ scrollProgressRef, theme }: SceneProps) {
   const foldProgress = Math.max(0, Math.min(1, progress / 0.22));
   const angle = (1 - foldProgress) * (Math.PI / 2);
 
+  // Speed-based split factor for 3D CMYK Plate Separation (Option 1)
+  const speedSplit = Math.min(0.35, scrollSpeedRef.current * 12);
+
   const materialColor = "#FF3E00";
   const wireframeColor = theme === "dark" ? "#ffffff" : "#1a1a1a";
   const labelColor = theme === "dark" ? "#888888" : "#555555";
   const opacity = progress < 0.32 ? 1 : Math.max(0, 1 - (progress - 0.32) / 0.08);
 
-  return (
-    <group ref={meshRef} position={[0, 0, -2]} scale={[scale, scale, scale]}>
+  const renderBoxPanels = () => (
+    <>
       {/* Front Panel */}
       <mesh position={[0, 0, 0.5]} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 0.02]} />
@@ -86,13 +89,48 @@ function OrigamiBox({ scrollProgressRef, theme }: SceneProps) {
           <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
         </mesh>
       </group>
+    </>
+  );
 
-      {/* Crease fold lines (visual vector wireframe) */}
-      <Line
-        points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]}
-        color={wireframeColor}
-        lineWidth={1.5}
-      />
+  return (
+    <group ref={meshRef} position={[0, 0, -2]} scale={[scale, scale, scale]}>
+      
+      {/* Dynamic 3D Space CMYK Plate Separation on movement */}
+      {speedSplit > 0.005 ? (
+        <>
+          {/* Cyan Channel Offset */}
+          <group position={[-speedSplit * 0.4, speedSplit * 0.4, 0]}>
+            <Line
+              points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]}
+              color="#06b6d4"
+              lineWidth={1.5}
+              transparent
+              opacity={opacity * 0.7}
+            />
+          </group>
+          {/* Magenta Channel Offset */}
+          <group position={[speedSplit * 0.4, -speedSplit * 0.4, 0]}>
+            <Line
+              points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]}
+              color="#ec4899"
+              lineWidth={1.5}
+              transparent
+              opacity={opacity * 0.7}
+            />
+          </group>
+          {/* Base Solid Plate Panels */}
+          {renderBoxPanels()}
+        </>
+      ) : (
+        <>
+          {renderBoxPanels()}
+          <Line
+            points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]}
+            color={wireframeColor}
+            lineWidth={1.5}
+          />
+        </>
+      )}
 
       {/* Technical Blueprint Dimension Annotations */}
       {opacity > 0 && (
@@ -104,7 +142,6 @@ function OrigamiBox({ scrollProgressRef, theme }: SceneProps) {
             position={[0, -0.15, 0]}
             fontSize={0.06}
             color={labelColor}
-            font="/Fonts/CourierPrime-Regular.ttf"
             anchorX="center"
             anchorY="middle"
             transparent
@@ -125,7 +162,6 @@ function OrigamiBox({ scrollProgressRef, theme }: SceneProps) {
             rotation={[0, 0, -Math.PI / 2]}
             fontSize={0.06}
             color={labelColor}
-            font="/Fonts/CourierPrime-Regular.ttf"
             anchorX="center"
             anchorY="middle"
             transparent
@@ -140,9 +176,9 @@ function OrigamiBox({ scrollProgressRef, theme }: SceneProps) {
 }
 
 // Sub-Component 2: Offset Press Roller & Ribbon (Concept 2)
-function PressroomRollers({ scrollProgressRef, theme }: SceneProps) {
+function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const rollerGroupRef = useRef<THREE.Group>(null);
-  const particleGroupRef = useRef<THREE.Group>(null);
+  const sphereGroupRef = useRef<THREE.Group>(null);
   
   const smoothProgressRef = useRef(0);
   const velocityRef = useRef(0);
@@ -150,17 +186,19 @@ function PressroomRollers({ scrollProgressRef, theme }: SceneProps) {
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.2) * 0.8;
 
-  // Generate ink spray particles that spin off the cylinders
-  const particles = Array.from({ length: 15 }).map((_, idx) => {
-    const angle = (idx / 15) * Math.PI * 2;
-    const radius = 0.65 + (idx % 3) * 0.12;
-    return {
-      x: Math.cos(angle) * radius,
-      y: Math.sin(angle) * radius,
-      z: ((idx % 5) - 2.5) * 0.4,
-      color: idx % 3 === 0 ? "#06b6d4" : idx % 3 === 1 ? "#ec4899" : "#eab308"
-    };
-  });
+  // Continuous Fluid Ink Particle Ribbon (Option 3)
+  const particleCount = 36;
+  const particlesRef = useRef(Array.from({ length: particleCount }).map((_, i) => ({
+    x: 0,
+    y: 0,
+    z: 0,
+    t: (i / particleCount) * Math.PI * 2, // evenly distributed initial phases
+    speed: 0.012 + Math.random() * 0.008,
+    color: i % 3 === 0 ? "#06b6d4" : i % 3 === 1 ? "#ec4899" : "#eab308"
+  })));
+
+  // Array of mesh refs to update positions directly inside useFrame without triggering re-renders
+  const sphereRefs = useRef<THREE.Group[]>([]);
 
   useFrame(() => {
     const target = scrollProgressRef.current;
@@ -195,10 +233,26 @@ function PressroomRollers({ scrollProgressRef, theme }: SceneProps) {
       });
     }
 
-    // Spin ink spray particles in reverse coordinate vectors
-    if (particleGroupRef.current) {
-      particleGroupRef.current.rotation.z = activeProgress * Math.PI * 5.2;
-    }
+    // Advance and map the flowing ink particle positions along the press path
+    const pts = particlesRef.current;
+    const speedMultiplier = 1.0 + scrollSpeedRef.current * 15; // particles flow faster during scroll
+    
+    pts.forEach((p, idx) => {
+      p.t += p.speed * speedMultiplier;
+      if (p.t > Math.PI * 2) {
+        p.t = 0;
+      }
+      
+      // Fluid path winding between cylinders
+      p.x = -1.4 + (p.t / (Math.PI * 2)) * 2.8;
+      p.y = Math.sin(p.t * 3.5) * 0.38 - 0.22;
+      p.z = Math.cos(p.t * 2.2) * 0.18;
+
+      const sphereGroup = sphereRefs.current[idx];
+      if (sphereGroup) {
+        sphereGroup.position.set(p.x, p.y, p.z);
+      }
+    });
   });
 
   const cylinderColor = theme === "dark" ? "#222222" : "#dddddd";
@@ -229,14 +283,21 @@ function PressroomRollers({ scrollProgressRef, theme }: SceneProps) {
         <meshStandardMaterial color={paperColor} roughness={0.9} />
       </mesh>
 
-      {/* Ink Spray particles (glowing spheres) */}
+      {/* Flowing liquid ink stream overlay (Option 3) */}
       {opacity > 0 && (
-        <group ref={particleGroupRef} position={[0, -0.8, -0.5]}>
-          {particles.map((pt, idx) => (
-            <mesh key={idx} position={[pt.x, pt.y, pt.z]}>
-              <sphereGeometry args={[0.035, 8, 8]} />
-              <meshBasicMaterial color={pt.color} transparent opacity={0.8} />
-            </mesh>
+        <group ref={sphereGroupRef}>
+          {particlesRef.current.map((pt, idx) => (
+            <group
+              key={idx}
+              ref={(el) => {
+                if (el) sphereRefs.current[idx] = el;
+              }}
+            >
+              <mesh>
+                <sphereGeometry args={[0.038, 8, 8]} />
+                <meshBasicMaterial color={pt.color} transparent opacity={opacity * 0.75} />
+              </mesh>
+            </group>
           ))}
         </group>
       )}
@@ -245,7 +306,7 @@ function PressroomRollers({ scrollProgressRef, theme }: SceneProps) {
 }
 
 // Sub-Component 3: Brutalist Vector Node Flight (Concept 3)
-function VectorNodeFlight({ scrollProgressRef, theme }: SceneProps) {
+function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const groupRef = useRef<THREE.Group>(null);
   const nodesRef = useRef<THREE.Group>(null);
   
@@ -255,14 +316,12 @@ function VectorNodeFlight({ scrollProgressRef, theme }: SceneProps) {
   const { viewport, pointer } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.0) * 0.85;
 
-  // Generate vector coordinates
   const initialPoints = [
     [-2, -2, -10], [0, 2, -6], [2, -1, -8],
     [3, 1, -12], [-1, -3, -15], [0, 0, -4],
     [-2, 2, -7], [2, 2, -5], [-3, -1, -9]
   ] as [number, number, number][];
 
-  // Store nodes offset positions dynamically for mouse attraction warp
   const offsetsRef = useRef<THREE.Vector3[]>(initialPoints.map(p => new THREE.Vector3(...p)));
 
   useFrame(() => {
@@ -305,53 +364,78 @@ function VectorNodeFlight({ scrollProgressRef, theme }: SceneProps) {
       const orig = initialPoints[idx];
       const dist = nodePos.distanceTo(targetPointer);
       
-      // Pull nodes toward cursor if cursor is within 2.0 units range
       if (dist < 2.0) {
         const pullDir = new THREE.Vector3().subVectors(targetPointer, nodePos).normalize();
         const pullStrength = (2.0 - dist) * 0.04;
         nodePos.addScaledVector(pullDir, pullStrength);
       }
       
-      // Spring back to original positions slowly
       const homeDir = new THREE.Vector3(...orig).sub(nodePos);
       nodePos.addScaledVector(homeDir, 0.05);
     });
   });
+
+  const speedSplit = Math.min(0.35, scrollSpeedRef.current * 12);
 
   const lineColor = theme === "dark" ? "#555555" : "#bbbbbb";
   const labelColor = theme === "dark" ? "#737373" : "#666666";
   const particleSaturation = theme === "dark" ? 0 : 0.5;
   const opacity = smoothProgressRef.current >= 0.46 && smoothProgressRef.current <= 0.84 ? 1 : 0;
 
+  const renderGridLines = (colorOverride?: string) => (
+    <>
+      {initialPoints.map((_, i) => {
+        const nextIdx = (i + 1) % initialPoints.length;
+        const currentPos = offsetsRef.current[i];
+        const nextPos = offsetsRef.current[nextIdx];
+        
+        return (
+          <Line
+            key={i}
+            points={[[currentPos.x, currentPos.y, currentPos.z], [nextPos.x, nextPos.y, nextPos.z]]}
+            color={colorOverride || lineColor}
+            lineWidth={1}
+            transparent
+            opacity={opacity * 0.8}
+          />
+        );
+      })}
+    </>
+  );
+
   return (
     <group ref={groupRef} position={[0, 0, -5]} scale={[scale, scale, scale]}>
-      {/* Grid Anchor Lines & Labels */}
+      {/* Grid Anchor Lines with Speed-based CMYK splits (Option 1) */}
       <group ref={nodesRef}>
+        {speedSplit > 0.005 ? (
+          <>
+            <group position={[-speedSplit * 0.3, speedSplit * 0.3, 0]}>
+              {renderGridLines("#06b6d4")}
+            </group>
+            <group position={[speedSplit * 0.3, -speedSplit * 0.3, 0]}>
+              {renderGridLines("#ec4899")}
+            </group>
+            {renderGridLines()}
+          </>
+        ) : (
+          renderGridLines()
+        )}
+
+        {/* Nodes and coordinates readouts */}
         {initialPoints.map((_, i) => {
-          const nextIdx = (i + 1) % initialPoints.length;
           const currentPos = offsetsRef.current[i];
-          const nextPos = offsetsRef.current[nextIdx];
-          
           return (
-            <group key={i}>
-              <Line
-                points={[[currentPos.x, currentPos.y, currentPos.z], [nextPos.x, nextPos.y, nextPos.z]]}
-                color={lineColor}
-                lineWidth={1}
-              />
-              {/* Draw nodes at joint intersections */}
+            <group key={`node-${i}`}>
               <mesh position={[currentPos.x, currentPos.y, currentPos.z]}>
                 <boxGeometry args={[0.15, 0.15, 0.15]} />
                 <meshBasicMaterial color="#FF3E00" />
               </mesh>
               
-              {/* Coordinate label next to every node */}
               {opacity > 0 && i % 3 === 0 && (
                 <Text
                   position={[currentPos.x + 0.28, currentPos.y + 0.1, currentPos.z]}
                   fontSize={0.075}
                   color={labelColor}
-                  font="/Fonts/CourierPrime-Regular.ttf"
                   anchorX="left"
                   anchorY="bottom"
                   transparent
@@ -459,7 +543,6 @@ function CMYKRegistrationScene({ scrollProgressRef, theme }: SceneProps) {
               position={[0, 0.15, 0]}
               fontSize={0.065}
               color="#FF3E00"
-              font="/Fonts/CourierPrime-Regular.ttf"
               anchorX="left"
               anchorY="middle"
               transparent
@@ -471,7 +554,6 @@ function CMYKRegistrationScene({ scrollProgressRef, theme }: SceneProps) {
               position={[0, -0.05, 0]}
               fontSize={0.075}
               color={ringColor}
-              font="/Fonts/CourierPrime-Regular.ttf"
               anchorX="left"
               anchorY="middle"
               transparent
@@ -483,7 +565,6 @@ function CMYKRegistrationScene({ scrollProgressRef, theme }: SceneProps) {
               position={[0, -0.22, 0]}
               fontSize={0.055}
               color={labelColor}
-              font="/Fonts/CourierPrime-Regular.ttf"
               anchorX="left"
               anchorY="middle"
               transparent
@@ -536,8 +617,36 @@ function CameraDirector({ scrollProgressRef }: { scrollProgressRef: React.Mutabl
   return null;
 }
 
+// Dynamic Spotlight with mouse following shadow sweeps (Option 2)
+function DynamicStudioSpotlight() {
+  const lightRef = useRef<THREE.SpotLight>(null);
+  const { pointer } = useThree();
+
+  useFrame(() => {
+    if (lightRef.current) {
+      // Smoothly transition spotlight position to track cursor coordinate sweeps
+      lightRef.current.position.x = THREE.MathUtils.lerp(lightRef.current.position.x, pointer.x * 4.5, 0.08);
+      lightRef.current.position.y = THREE.MathUtils.lerp(lightRef.current.position.y, pointer.y * 4.5, 0.08);
+    }
+  });
+
+  return (
+    <spotLight
+      ref={lightRef}
+      position={[0, 4, 3]}
+      angle={0.6}
+      penumbra={0.8}
+      intensity={3.0}
+      castShadow
+      shadow-mapSize-width={1024}
+      shadow-mapSize-height={1024}
+    />
+  );
+}
+
 export default function ScrollCanvas({ theme }: { theme: "dark" | "light" }) {
   const scrollProgressRef = useRef<number>(0);
+  const scrollSpeedRef = useRef<number>(0);
 
   return (
     <div className="fixed inset-0 w-full h-full pointer-events-none z-0">
@@ -546,33 +655,52 @@ export default function ScrollCanvas({ theme }: { theme: "dark" | "light" }) {
         dpr={[1, 1.5]}
         camera={{ position: [0, 0, 3.5], fov: 45 }}
       >
-        {/* Frame update hook to keep scroll ref synchronized at maximum monitor refresh rate */}
-        <FrameScrollTracker scrollProgressRef={scrollProgressRef} />
+        {/* Frame update hook to keep scroll ref & speed synchronized */}
+        <FrameScrollTracker scrollProgressRef={scrollProgressRef} scrollSpeedRef={scrollSpeedRef} />
 
-        {/* Adapt light intensity to theme */}
+        {/* Adapt ambient and fill lights to theme */}
         <ambientLight intensity={theme === "dark" ? 0.2 : 0.6} />
-        <directionalLight position={[5, 5, 5]} intensity={theme === "dark" ? 1.5 : 1.0} />
         <directionalLight position={[-5, 5, -5]} intensity={0.5} />
-        <pointLight position={[0, 2, 2]} intensity={1.2} color="#FF3E00" />
+        <pointLight position={[0, 2, -2]} intensity={1.5} color="#FF3E00" />
+        
+        {/* Interactive Pointer-following Studio Spotlight (Option 2) */}
+        <DynamicStudioSpotlight />
         
         <CameraDirector scrollProgressRef={scrollProgressRef} />
         
         {/* Immersive Scroll Scenes */}
-        <OrigamiBox scrollProgressRef={scrollProgressRef} theme={theme} />
-        <PressroomRollers scrollProgressRef={scrollProgressRef} theme={theme} />
-        <VectorNodeFlight scrollProgressRef={scrollProgressRef} theme={theme} />
+        <OrigamiBox scrollProgressRef={scrollProgressRef} scrollSpeedRef={scrollSpeedRef} theme={theme} />
+        <PressroomRollers scrollProgressRef={scrollProgressRef} scrollSpeedRef={scrollSpeedRef} theme={theme} />
+        <VectorNodeFlight scrollProgressRef={scrollProgressRef} scrollSpeedRef={scrollSpeedRef} theme={theme} />
         <CMYKRegistrationScene scrollProgressRef={scrollProgressRef} theme={theme} />
       </Canvas>
     </div>
   );
 }
 
-// Separate helper component to perform frame-rate synced scroll reading
-function FrameScrollTracker({ scrollProgressRef }: { scrollProgressRef: React.MutableRefObject<number> }) {
+// Separate helper component to perform frame-rate synced scroll and speed reading
+function FrameScrollTracker({
+  scrollProgressRef,
+  scrollSpeedRef,
+}: {
+  scrollProgressRef: React.MutableRefObject<number>;
+  scrollSpeedRef: React.MutableRefObject<number>;
+}) {
+  const lastScrollYRef = useRef(window.scrollY);
+
   useFrame(() => {
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
     if (docHeight > 0) {
-      scrollProgressRef.current = Math.max(0, Math.min(1, window.scrollY / docHeight));
+      const currentScrollY = window.scrollY;
+      const targetProgress = Math.max(0, Math.min(1, currentScrollY / docHeight));
+      scrollProgressRef.current = targetProgress;
+
+      // Calculate instantaneous scroll speed for chromatic split amplitude
+      const deltaScroll = Math.abs(currentScrollY - lastScrollYRef.current);
+      const instantSpeed = docHeight > 0 ? deltaScroll / docHeight : 0;
+      scrollSpeedRef.current = THREE.MathUtils.lerp(scrollSpeedRef.current, instantSpeed, 0.1);
+      
+      lastScrollYRef.current = currentScrollY;
     }
   });
   return null;
