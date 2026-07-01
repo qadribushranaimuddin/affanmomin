@@ -136,6 +136,7 @@ export default function PackagingFoldSimulator() {
   const [showCreaseLines, setShowCreaseLines] = useState(true);
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [glossOverlayActive, setGlossOverlayActive] = useState(true);
+  const [dieCutWindow, setDieCutWindow] = useState<'none' | 'circle' | 'hexagon' | 'arch'>('none');
 
   // Dynamic Dimension States (Structural Mechanics)
   const [boxWidth, setBoxWidth] = useState(92);
@@ -793,76 +794,94 @@ export default function PackagingFoldSimulator() {
                   {showAnnotations && <span>{boxWidth}x{boxHeight}mm</span>}
                 </div>
                 
-                {/* ADVANCED REVERSIBLE FOIL, EMBOSS, CMYK EMBLEM */}
-                <div className="relative my-auto flex flex-col items-center justify-center z-10 select-none">
-                  <div 
-                    style={{
-                      width: `${Math.min(55, boxWidth * 0.7)}px`,
-                      height: `${Math.min(55, boxHeight * 0.7)}px`,
-                      borderRadius: "50%",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "all 0.3s ease",
-                      // Emboss/Deboss Z shift & dynamic shading
-                      ...(embossDepth !== 0 ? {
-                        boxShadow: embossDepth > 0 
-                          ? `inset -1.5px -1.5px 3.5px rgba(255,255,255,0.75), inset 1.5px 1.5px 3.5px rgba(0,0,0,0.35), -2.5px -2.5px 6px rgba(255,255,255,0.48), 2.5px 2.5px 6px rgba(0,0,0,0.28)` 
-                          : `inset 1.5px 1.5px 3.5px rgba(0,0,0,0.48), inset -1.5px -1.5px 3.5px rgba(255,255,255,0.25), 1.5px 1.5px 3.5px rgba(255,255,255,0.35)`,
-                        border: embossDepth > 0 
-                          ? "1px solid rgba(255,255,255,0.2)" 
-                          : "1px solid rgba(0,0,0,0.18)",
-                        transform: `translateZ(${embossDepth * 2.5}px)`
-                      } : {}),
-                      // Hot Metal Foil Stamp select
-                      ...(foilType !== "none" ? {
-                        background: foilType === "gold" 
-                          ? "linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%)"
-                          : foilType === "silver"
-                          ? "linear-gradient(135deg, #e3e3e3 0%, #fbfbfb 25%, #bebebe 50%, #f4f4f4 75%, #a2a2a2 100%)"
-                          : foilType === "rose"
-                          ? "linear-gradient(135deg, #e05c5c 0%, #ffabab 25%, #c43b3b 50%, #ffa5a5 75%, #9b1e1e 100%)"
-                          : "linear-gradient(135deg, #ff007f 0%, #7f00ff 25%, #00ffff 50%, #00ff7f 75%, #ffff00 100%)",
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.45)",
-                        border: "none"
-                      } : {
-                        ...(activeViewMode === "spot-uv" ? {
-                          background: "rgba(245, 158, 11, 0.16)",
-                          border: "1px solid rgba(245, 158, 11, 0.85)",
-                          boxShadow: "0 0 10px rgba(245, 158, 11, 0.35)",
-                        } : activeViewMode === "spectrograph" ? {
-                          background: "radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(4, 120, 87, 0.4) 100%)",
-                          border: "1.5px solid rgba(16, 185, 129, 0.8)",
-                          boxShadow: "0 0 8px rgba(16, 185, 129, 0.45)",
-                        } : {
-                          background: stock === "luxury" ? "rgba(212, 175, 55, 0.1)" : "rgba(15, 23, 42, 0.03)",
-                          border: `1.5px solid ${stock === "luxury" ? "rgba(212, 175, 55, 0.45)" : "rgba(15, 23, 42, 0.12)"}`
-                        })
-                      })
-                    }}
-                    className="flex flex-col items-center justify-center p-1 font-mono text-center shadow-inner"
-                  >
-                    {/* Live CMYK Misalignment plate displacement text shadow */}
-                    <span 
+                {/* ADVANCED REVERSIBLE FOIL, EMBOSS, CMYK EMBLEM OR DIE-CUT WINDOW */}
+                {dieCutWindow === 'none' ? (
+                  <div className="relative my-auto flex flex-col items-center justify-center z-10 select-none">
+                    <div 
                       style={{
-                        fontSize: "6px",
-                        fontWeight: "900",
-                        letterSpacing: "0.06em",
-                        textShadow: registrationShift !== 0 
-                          ? `${registrationShift * 2}px 0 0 rgba(0, 255, 255, 0.95), ${-registrationShift * 2}px 0 0 rgba(255, 0, 255, 0.95), 0 ${registrationShift * 1.5}px 0 rgba(225, 225, 0, 0.8)` 
-                          : "none",
-                        color: foilType !== "none" ? "#0f172a" : "inherit"
+                        width: `${Math.min(55, boxWidth * 0.7)}px`,
+                        height: `${Math.min(55, boxHeight * 0.7)}px`,
+                        borderRadius: "50%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.3s ease",
+                        // Emboss/Deboss Z shift & dynamic shading
+                        ...(embossDepth !== 0 ? {
+                          boxShadow: embossDepth > 0 
+                            ? `inset -1.5px -1.5px 3.5px rgba(255,255,255,0.75), inset 1.5px 1.5px 3.5px rgba(0,0,0,0.35), -2.5px -2.5px 6px rgba(255,255,255,0.48), 2.5px 2.5px 6px rgba(0,0,0,0.28)` 
+                            : `inset 1.5px 1.5px 3.5px rgba(0,0,0,0.48), inset -1.5px -1.5px 3.5px rgba(255,255,255,0.25), 1.5px 1.5px 3.5px rgba(255,255,255,0.35)`,
+                          border: embossDepth > 0 
+                            ? "1px solid rgba(255,255,255,0.2)" 
+                            : "1px solid rgba(0,0,0,0.18)",
+                          transform: `translateZ(${embossDepth * 2.5}px)`
+                        } : {}),
+                        // Hot Metal Foil Stamp select
+                        ...(foilType !== "none" ? {
+                          background: foilType === "gold" 
+                            ? "linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%)"
+                            : foilType === "silver"
+                            ? "linear-gradient(135deg, #e3e3e3 0%, #fbfbfb 25%, #bebebe 50%, #f4f4f4 75%, #a2a2a2 100%)"
+                            : foilType === "rose"
+                            ? "linear-gradient(135deg, #e05c5c 0%, #ffabab 25%, #c43b3b 50%, #ffa5a5 75%, #9b1e1e 100%)"
+                            : "linear-gradient(135deg, #ff007f 0%, #7f00ff 25%, #00ffff 50%, #00ff7f 75%, #ffff00 100%)",
+                          boxShadow: "0 2px 5px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.45)",
+                          border: "none"
+                        } : {
+                          ...(activeViewMode === "spot-uv" ? {
+                            background: "rgba(245, 158, 11, 0.16)",
+                            border: "1px solid rgba(245, 158, 11, 0.85)",
+                            boxShadow: "0 0 10px rgba(245, 158, 11, 0.35)",
+                          } : activeViewMode === "spectrograph" ? {
+                            background: "radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(4, 120, 87, 0.4) 100%)",
+                            border: "1.5px solid rgba(16, 185, 129, 0.8)",
+                            boxShadow: "0 0 8px rgba(16, 185, 129, 0.45)",
+                          } : {
+                            background: stock === "luxury" ? "rgba(212, 175, 55, 0.1)" : "rgba(15, 23, 42, 0.03)",
+                            border: `1.5px solid ${stock === "luxury" ? "rgba(212, 175, 55, 0.45)" : "rgba(15, 23, 42, 0.12)"}`
+                          })
+                        })
                       }}
-                      className="uppercase transition-all duration-150"
+                      className="flex flex-col items-center justify-center p-1 font-mono text-center shadow-inner"
                     >
-                      CALIBRATED
-                    </span>
-                    <span style={{ fontSize: "4px" }} className={foilType !== "none" ? "text-slate-800 font-bold" : "text-brand-accent font-bold"}>
-                      // CND CERT //
-                    </span>
+                      {/* Live CMYK Misalignment plate displacement text shadow */}
+                      <span 
+                        style={{
+                          fontSize: "6px",
+                          fontWeight: "900",
+                          letterSpacing: "0.06em",
+                          textShadow: registrationShift !== 0 
+                            ? `${registrationShift * 2}px 0 0 rgba(0, 255, 255, 0.95), ${-registrationShift * 2}px 0 0 rgba(255, 0, 255, 0.95), 0 ${registrationShift * 1.5}px 0 rgba(225, 225, 0, 0.8)` 
+                            : "none",
+                          color: foilType !== "none" ? "#0f172a" : "inherit"
+                        }}
+                        className="uppercase transition-all duration-150"
+                      >
+                        CALIBRATED
+                      </span>
+                      <span style={{ fontSize: "4px" }} className={foilType !== "none" ? "text-slate-800 font-bold" : "text-brand-accent font-bold"}>
+                        // CND CERT //
+                      </span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* RENDER THE DIE-CUT VIEWING WINDOW CAVITY WITH THE PRODUCT SPECIMEN */
+                  <div 
+                    className="relative my-auto w-16 h-16 bg-[#090b11] border border-brand-accent/30 flex flex-col items-center justify-center overflow-hidden z-10 select-none shadow-[inset_0_2px_6px_rgba(0,0,0,0.85)]"
+                    style={{
+                      borderRadius: dieCutWindow === 'circle' ? '50%' : dieCutWindow === 'hexagon' ? '4px' : '50% 50% 0 0',
+                      clipPath: dieCutWindow === 'hexagon' ? 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' : 'none'
+                    }}
+                  >
+                    {/* Glowing Product Specimen Cavity outline */}
+                    <svg className="w-8 h-8 text-brand-accent opacity-75 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                      <path d="M7 10h10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10z M10 6h4v4h-4V6z M12 2v4" />
+                      <circle cx="12" cy="14" r="2.5" fill="rgba(255, 62, 0, 0.25)" />
+                    </svg>
+                    <span className="font-mono text-[4.5px] text-brand-muted/70 tracking-widest mt-1">// FLASK_OUTLINE //</span>
+                  </div>
+                )}
 
                 {/* Bleed Violation Alert */}
                 {showBleedLines && (boxWidth > 115 || boxHeight > 115) && (
@@ -1597,7 +1616,7 @@ export default function PackagingFoldSimulator() {
             {/* TAB 2: INTERACTIVE EMBOSSING & STAMPING SCREEN */}
             {activeControlTab === "finish" && (
               <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <div className="flex justify-between font-mono text-[8.5px] uppercase tracking-wider text-brand-muted">
                       <span>Raised Embossing / Debossing Depth</span>
@@ -1622,16 +1641,39 @@ export default function PackagingFoldSimulator() {
                     <span className="text-brand-muted uppercase font-bold font-mono">// SELECT HOT METALLIC FOIL STAMP:</span>
                     <div className="flex flex-wrap gap-1 mt-0.5">
                       {[
-                        { id: "none", name: "No Foil (Matte Ink)" },
-                        { id: "gold", name: "24k Gold Alloy" },
+                        { id: "none", name: "No Foil" },
+                        { id: "gold", name: "24k Gold" },
                         { id: "silver", name: "Silver Leaf" },
                         { id: "rose", name: "Rose Coated" },
-                        { id: "holo", name: "Rainbow Hologram" }
+                        { id: "holo", name: "Holo" }
                       ].map((item) => (
                         <button
                           key={item.id}
                           onClick={() => setFoilType(item.id as any)}
                           className={`px-2 py-0.5 border text-[7.5px] uppercase font-bold cursor-pointer ${foilType === item.id ? 'bg-brand-accent/25 border-brand-accent text-brand-text' : 'bg-brand-bg/60 border-brand-border/40 text-brand-muted hover:text-brand-text'}`}
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 font-mono text-[8px] leading-tight select-none">
+                    <span className="text-brand-muted uppercase font-bold font-mono">// SELECT DIE-CUT WINDOW SHAPE:</span>
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {[
+                        { id: "none", name: "Solid Box" },
+                        { id: "circle", name: "Circle Cut" },
+                        { id: "hexagon", name: "Hexagon Cut" },
+                        { id: "arch", name: "Arch Cut" }
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setDieCutWindow(item.id as any);
+                            playFoldClick(320, 0.05);
+                          }}
+                          className={`px-2 py-0.5 border text-[7.5px] uppercase font-bold cursor-pointer ${dieCutWindow === item.id ? 'bg-brand-accent/25 border-brand-accent text-brand-text' : 'bg-brand-bg/60 border-brand-border/40 text-brand-muted hover:text-brand-text'}`}
                         >
                           {item.name}
                         </button>
