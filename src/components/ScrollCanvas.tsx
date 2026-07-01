@@ -9,6 +9,143 @@ interface SceneProps {
   theme: "dark" | "light";
 }
 
+// ==========================================
+// Upgraded 3D Visual Effects Helpers
+// ==========================================
+function Gear({ position, size, speed, color }: { position: [number, number, number]; size: number; speed: number; color: string }) {
+  const gearRef = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (gearRef.current) {
+      gearRef.current.rotation.z = state.clock.elapsedTime * speed;
+    }
+  });
+  return (
+    <group ref={gearRef} position={position}>
+      <mesh>
+        <ringGeometry args={[size * 0.4, size, 8]} />
+        <meshBasicMaterial color={color} wireframe />
+      </mesh>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <mesh key={i} rotation={[0, 0, (i * Math.PI) / 4]}>
+          <boxGeometry args={[size * 2.2, size * 0.25, 0.015]} />
+          <meshBasicMaterial color={color} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function CRTTextStream({ position, color }: { position: [number, number, number]; color: string }) {
+  const textRef = useRef<THREE.Group>(null);
+  const [content, setContent] = React.useState("01101\n10110\n00101");
+  
+  useFrame((state) => {
+    if (textRef.current) {
+      textRef.current.position.y = position[1] - (state.clock.elapsedTime * 0.25) % 0.8;
+    }
+    if (Math.random() < 0.15) {
+      const chars = "01$[]#@%&*";
+      let nextText = "";
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          nextText += chars[Math.floor(Math.random() * chars.length)];
+        }
+        nextText += "\n";
+      }
+      setContent(nextText);
+    }
+  });
+
+  return (
+    <group ref={textRef} position={position}>
+      <Text fontSize={0.055} color={color} anchorX="left" anchorY="top" transparent opacity={0.15}>
+        {content}
+      </Text>
+    </group>
+  );
+}
+
+function LightStreaks({ theme }: { theme: "dark" | "light" }) {
+  const count = 35;
+  const streaksRef = useRef<THREE.Group>(null);
+  const particles = useMemo(() => {
+    return Array.from({ length: count }).map(() => ({
+      x: (Math.random() - 0.5) * 6,
+      y: (Math.random() - 0.5) * 4,
+      z: -Math.random() * 80,
+      speed: 0.8 + Math.random() * 1.2
+    }));
+  }, []);
+
+  useFrame(() => {
+    if (streaksRef.current) {
+      streaksRef.current.children.forEach((child, i) => {
+        const p = particles[i];
+        p.z += p.speed;
+        if (p.z > 10) {
+          p.z = -80;
+          p.x = (Math.random() - 0.5) * 6;
+          p.y = (Math.random() - 0.5) * 4;
+        }
+        child.position.set(p.x, p.y, p.z);
+      });
+    }
+  });
+
+  const color = theme === "dark" ? "#00ffff" : "#FF3E00";
+
+  return (
+    <group ref={streaksRef}>
+      {particles.map((_, i) => (
+        <mesh key={i}>
+          <boxGeometry args={[0.015, 0.015, 0.8]} />
+          <meshBasicMaterial color={color} transparent opacity={0.4} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function HologramBeamParticles({ count, theme }: { count: number; theme: "dark" | "light" }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const particles = useMemo(() => {
+    return Array.from({ length: count }).map(() => ({
+      x: (Math.random() - 0.5) * 1.2,
+      y: -1.8 + Math.random() * 2.5,
+      z: (Math.random() - 0.5) * 1.2,
+      speed: 0.015 + Math.random() * 0.025
+    }));
+  }, [count]);
+
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.children.forEach((child, i) => {
+        const p = particles[i];
+        p.y += p.speed;
+        if (p.y > 1.2) {
+          p.y = -1.8;
+          p.x = (Math.random() - 0.5) * 1.2;
+          p.z = (Math.random() - 0.5) * 1.2;
+        }
+        child.position.set(p.x, p.y, p.z);
+      });
+    }
+  });
+
+  const color = theme === "dark" ? "#00ffcc" : "#FF3E00";
+
+  return (
+    <group ref={groupRef}>
+      {particles.map((_, i) => (
+        <mesh key={i}>
+          <sphereGeometry args={[0.018, 4, 4]} />
+          <meshBasicMaterial color={color} transparent opacity={0.5} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 // Helper to generate a procedural brushed metal texture Bump Map
 function createBrushedMetalTexture() {
   const canvas = document.createElement("canvas");
@@ -475,6 +612,16 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
       {/* Curved CRT Display boundary line */}
       <Line points={[[-2.1, -0.9, -0.1], [2.1, -0.9, -0.1], [2.3, 0.9, -0.1], [-2.3, 0.9, -0.1], [-2.1, -0.9, -0.1]]} color={theme === "dark" ? "#222" : "#ddd"} lineWidth={1.5} />
       
+      {/* Falling binary matrix background streams */}
+      <CRTTextStream position={[-1.8, 0.7, -0.12]} color={strokeColor} />
+      <CRTTextStream position={[-1.0, 0.5, -0.12]} color={strokeColor} />
+      <CRTTextStream position={[0.6, 0.8, -0.12]} color={strokeColor} />
+      <CRTTextStream position={[1.4, 0.6, -0.12]} color={strokeColor} />
+
+      {/* Rotating industrial system gears */}
+      <Gear position={[-2.3, 1.4, -0.05]} size={0.15} speed={1.2} color={strokeColor} />
+      <Gear position={[2.3, 1.4, -0.05]} size={0.15} speed={-1.2} color={strokeColor} />
+
       {/* Oscilloscope Waveform */}
       <Line points={wavePoints} color={strokeColor} lineWidth={2.5} transparent opacity={flicker} />
       
@@ -600,6 +747,29 @@ function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
 
   return (
     <group ref={roadRef}>
+      {/* Light speed warp streaks */}
+      <LightStreaks theme={theme} />
+
+      {/* Synthwave wireframe mountains flanking road */}
+      {Array.from({ length: 9 }).map((_, i) => {
+        const sideZ = -10 - i * 11;
+        const pathPt = splinePoints.find(p => p.z <= sideZ) || splinePoints[0];
+        return (
+          <group key={i}>
+            {/* Left Mountain */}
+            <mesh position={[pathPt.x - 3.8, pathPt.y - 0.7, sideZ]} rotation={[0, Math.PI / 4, 0]}>
+              <coneGeometry args={[1.6, 2.0, 4]} />
+              <meshBasicMaterial color={theme === "dark" ? "#1e1b4b" : "#e2e8f0"} wireframe />
+            </mesh>
+            {/* Right Mountain */}
+            <mesh position={[pathPt.x + 3.8, pathPt.y - 0.7, sideZ]} rotation={[0, Math.PI / 4, 0]}>
+              <coneGeometry args={[1.6, 2.0, 4]} />
+              <meshBasicMaterial color={theme === "dark" ? "#1e1b4b" : "#e2e8f0"} wireframe />
+            </mesh>
+          </group>
+        );
+      })}
+
       {/* 3 Neon Spline lanes */}
       <Line points={splinePoints} color={lineColor} lineWidth={3} />
       <Line points={splinePoints.map(p => new THREE.Vector3(p.x - 0.75, p.y - 0.25, p.z))} color="#FF3E00" lineWidth={1.5} />
@@ -661,12 +831,13 @@ function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
 // ==========================================
 function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
   const modelRef = useRef<THREE.Group>(null);
+  const compassRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
   const velocityRef = useRef(0);
   const { viewport, pointer } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.0) * 0.85;
 
-  useFrame(() => {
+  useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
     const force = (target - current) * 0.035;
@@ -677,6 +848,9 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
     if (modelRef.current) {
       modelRef.current.rotation.y = progress * Math.PI * 2.0;
       modelRef.current.rotation.x = 0.35 + progress * 0.25;
+    }
+    if (compassRef.current) {
+      compassRef.current.rotation.y = state.clock.getElapsedTime() * 0.5;
     }
   });
 
@@ -691,6 +865,25 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
     <group ref={modelRef} scale={[scale, scale, scale]} position={[0, 0, -2.5]}>
       <gridHelper args={[8, 16, blueprintColor, gridColor]} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -1]} />
 
+      {/* Rotating mechanical compass caliper tool on the side */}
+      <group ref={compassRef} position={[-2.3, 1.2, -0.5]}>
+        <mesh>
+          <cylinderGeometry args={[0.015, 0.015, 0.8, 8]} />
+          <meshBasicMaterial color={blueprintColor} wireframe />
+        </mesh>
+        <mesh position={[-0.15, -0.3, 0]} rotation={[0, 0, 0.35]}>
+          <cylinderGeometry args={[0.01, 0.01, 0.6, 8]} />
+          <meshBasicMaterial color={blueprintColor} wireframe />
+        </mesh>
+        <mesh position={[0.15, -0.3, 0]} rotation={[0, 0, -0.35]}>
+          <cylinderGeometry args={[0.01, 0.01, 0.6, 8]} />
+          <meshBasicMaterial color={blueprintColor} wireframe />
+        </mesh>
+        <Text position={[0, 0.5, 0]} fontSize={0.065} color={blueprintColor}>
+          CAD_TOOL: COMPASS
+        </Text>
+      </group>
+
       <group position={[0, -0.3, 0]}>
         {/* Draw main frame lines progressively */}
         {drawLimit > 0.15 && (
@@ -700,6 +893,30 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
         {/* Laptop Screen Lid open */}
         {drawLimit > 0.45 && (
           <Line points={[[-1.2, 0, 0], [-1.2, 1.2, 0], [1.2, 1.2, 0], [1.2, 0, 0], [-1.2, 0, 0]]} color={blueprintColor} lineWidth={2} rotation={[-0.45, 0, 0]} />
+        )}
+
+        {/* Blueprint Drafting Dimensions W: 340mm */}
+        {drawLimit > 0.3 && (
+          <group position={[0, -0.15, 1.25]}>
+            <Line points={[[-1.4, 0, 0], [-1.4, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
+            <Line points={[[1.4, 0, 0], [1.4, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
+            <Line points={[[-1.4, 0.1, 0], [1.4, 0.1, 0]]} color={blueprintColor} lineWidth={1.5} />
+            <Text position={[0, 0.22, 0]} fontSize={0.055} color={blueprintColor} anchorX="center">
+              W: 340.00mm
+            </Text>
+          </group>
+        )}
+
+        {/* Blueprint Drafting Dimensions H: 220mm */}
+        {drawLimit > 0.6 && (
+          <group position={[-1.45, 0.6, 0.1]} rotation={[0, 0, Math.PI / 2]}>
+            <Line points={[[-0.6, 0, 0], [-0.6, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
+            <Line points={[[0.6, 0, 0], [0.6, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
+            <Line points={[[-0.6, 0.1, 0], [0.6, 0.1, 0]]} color={blueprintColor} lineWidth={1.5} />
+            <Text position={[0, 0.22, 0]} fontSize={0.055} color={blueprintColor} anchorX="center" rotation={[0, 0, -Math.PI / 2]}>
+              H: 220.00mm
+            </Text>
+          </group>
         )}
         
         {/* Interactive Caliper lines tracking cursor coordinate (Concept 3 Upgrade) */}
@@ -736,6 +953,17 @@ function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProp
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.2) * 0.95;
 
+  const particleChars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ[]{}#@$*";
+  const bgLetters = useMemo(() => {
+    return Array.from({ length: 25 }).map(() => ({
+      char: particleChars[Math.floor(Math.random() * particleChars.length)],
+      x: (Math.random() - 0.5) * 5,
+      y: (Math.random() - 0.5) * 4,
+      z: -Math.random() * 4 - 1,
+      speed: 0.1 + Math.random() * 0.2
+    }));
+  }, []);
+
   useFrame(() => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
@@ -758,6 +986,30 @@ function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProp
 
   return (
     <group ref={groupRef} scale={[scale, scale, scale]} position={[0, 0.5, -3]}>
+      {/* Background typographical noise field */}
+      {bgLetters.map((p, i) => {
+        // Move letters dynamically based on scroll speed
+        const currentY = p.y + scrollSpeedRef.current * p.speed * 4;
+        const wrappedY = ((currentY + 2) % 4) - 2;
+        return (
+          <group key={i} position={[p.x, wrappedY, p.z]}>
+            <Text fontSize={0.12} color={textColor} transparent opacity={0.15}>
+              {p.char}
+            </Text>
+          </group>
+        );
+      })}
+
+      {/* Connecting digital lines (Constellations) linking letters on disintegration */}
+      {drift > 0.02 && (
+        <group position={[0, 1.25, 0.02]}>
+          <Line points={[[-0.9 + drift, 0, 0], [-0.3, drift, 0]]} color={theme === "dark" ? "#00ffff" : "#0284c7"} lineWidth={1} transparent opacity={0.35} />
+          <Line points={[[-0.3, drift, 0], [0.3, -drift, 0]]} color={theme === "dark" ? "#ec4899" : "#db2777"} lineWidth={1} transparent opacity={0.35} />
+          <Line points={[[0.3, -drift, 0], [0.9 - drift, 0, 0]]} color={theme === "dark" ? "#eab308" : "#ca8a04"} lineWidth={1} transparent opacity={0.35} />
+          <Line points={[[0.9 - drift, 0, 0], [1.4, 0, -drift * 0.8]]} color={theme === "dark" ? "#00ff66" : "#059669"} lineWidth={1} transparent opacity={0.35} />
+        </group>
+      )}
+
       {/* Splitting individual letters to simulate typography coordinate collapse */}
       <group position={[0, 1.2, 0]}>
         <group position={[-0.9 + drift, 0, 0]} rotation={[0, drift * 0.5, 0]}>
@@ -846,6 +1098,26 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
 
   return (
     <group scale={[scale, scale, scale]} position={[0, 0, -2.5]}>
+      {/* Hologram Pedestal Base Emitter */}
+      <group position={[0, -1.8, 0]}>
+        <mesh>
+          <cylinderGeometry args={[1.0, 1.2, 0.15, 32]} />
+          <meshStandardMaterial color={theme === "dark" ? "#111111" : "#eeeeee"} roughness={0.2} metalness={0.9} />
+        </mesh>
+        <mesh position={[0, 0.08, 0]}>
+          <cylinderGeometry args={[0.9, 0.9, 0.02, 32]} />
+          <meshBasicMaterial color="#00ffcc" />
+        </mesh>
+      </group>
+
+      {/* Projection Beam Guide Lines */}
+      <Line points={[[0, -1.8, 0], [-0.65, 0, 0]]} color="#00ffcc" lineWidth={1} transparent opacity={0.35} />
+      <Line points={[[0, -1.8, 0], [0.65, 0, 0]]} color="#00ffcc" lineWidth={1} transparent opacity={0.35} />
+      <Line points={[[0, -1.8, 0], [0, 1.2, 0]]} color="#00ffcc" lineWidth={0.7} transparent opacity={0.2} />
+
+      {/* Rising beam energy particles */}
+      <HologramBeamParticles count={25} theme={theme} />
+
       {/* Top half of unfolding prism */}
       <mesh ref={meshTopRef}>
         <octahedronGeometry args={[0.65]} />
@@ -858,11 +1130,17 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
         <meshPhysicalMaterial transmission={0.92} roughness={0.08} thickness={1.4} ior={1.62} transparent opacity={0.4} color={glassColor} />
       </mesh>
 
-      {/* Glowing inner crystal core revealed as it opens */}
-      <mesh ref={coreRef}>
-        <sphereGeometry args={[0.4, 16, 16]} />
-        <meshBasicMaterial color="#FF3E00" />
-      </mesh>
+      {/* Glowing inner crystal core: Nested rotating wireframe polyhedrons */}
+      <group ref={coreRef}>
+        <mesh>
+          <icosahedronGeometry args={[0.3, 1]} />
+          <meshBasicMaterial color="#FF3E00" wireframe />
+        </mesh>
+        <mesh rotation={[Math.PI / 4, Math.PI / 4, 0]}>
+          <dodecahedronGeometry args={[0.2, 0]} />
+          <meshBasicMaterial color="#00ffcc" wireframe />
+        </mesh>
+      </group>
 
       {/* Orbital project rings carrying virtual cards (Concept 5 Upgrade) */}
       <group ref={ring1Ref} rotation={[Math.PI / 4, Math.PI / 3, 0]}>
@@ -873,12 +1151,12 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
         
         {/* Project Card nodes attached to Ring 1 */}
         <group position={[1.3, 0, 0]}>
-          <mesh><boxGeometry args={[0.2, 0.12, 0.02]} /><meshBasicMaterial color="#06b6d4" /></mesh>
-          <Text position={[0, 0.15, 0]} fontSize={0.055} color={wireColor}>PREPRESS</Text>
+          <mesh><boxGeometry args={[0.22, 0.13, 0.02]} /><meshBasicMaterial color="#06b6d4" /></mesh>
+          <Text position={[0, 0.16, 0]} fontSize={0.055} color={wireColor}>PREPRESS</Text>
         </group>
         <group position={[-1.3, 0, 0]}>
-          <mesh><boxGeometry args={[0.2, 0.12, 0.02]} /><meshBasicMaterial color="#06b6d4" /></mesh>
-          <Text position={[0, 0.15, 0]} fontSize={0.055} color={wireColor}>SANDBOX</Text>
+          <mesh><boxGeometry args={[0.22, 0.13, 0.02]} /><meshBasicMaterial color="#06b6d4" /></mesh>
+          <Text position={[0, 0.16, 0]} fontSize={0.055} color={wireColor}>SANDBOX</Text>
         </group>
       </group>
       
@@ -890,8 +1168,8 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
         
         {/* Project Card nodes attached to Ring 2 */}
         <group position={[0, 1.6, 0]}>
-          <mesh><boxGeometry args={[0.2, 0.12, 0.02]} /><meshBasicMaterial color="#FF3E00" /></mesh>
-          <Text position={[0, 0.15, 0]} fontSize={0.055} color={wireColor}>TACTILE</Text>
+          <mesh><boxGeometry args={[0.22, 0.13, 0.02]} /><meshBasicMaterial color="#FF3E00" /></mesh>
+          <Text position={[0, 0.16, 0]} fontSize={0.055} color={wireColor}>TACTILE</Text>
         </group>
       </group>
     </group>
