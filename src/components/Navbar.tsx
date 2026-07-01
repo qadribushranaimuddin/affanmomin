@@ -65,6 +65,7 @@ export default function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showLogoImage, setShowLogoImage] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const logoInterval = setInterval(() => {
@@ -237,69 +238,87 @@ export default function Navbar({
             </a>
           </div>
 
-          {/* Theme Toggle Button */}
-          <button
-            onClick={onToggleTheme}
-            id="theme-toggle-btn"
-            className="flex items-center gap-1.5 cursor-pointer text-brand-text hover:text-[#FF3E00] transition-colors font-mono font-bold text-[9px] uppercase tracking-wider px-2.5 py-1.5 border border-card-border hover:border-[#FF3E00]/30 bg-card-bg/25 rounded-md h-max select-none shadow-sm"
-            title="Toggle between Day (Light) and Night (Dark) mode"
-          >
-            {theme === "dark" ? (
-              <>
-                <Moon className="w-3.5 h-3.5 text-[#FF3E00] shrink-0" />
-                <span className="leading-none text-[8px]">Night</span>
-              </>
-            ) : (
-              <>
-                <Sun className="w-3.5 h-3.5 text-[#FF3E00] shrink-0" />
-                <span className="leading-none text-[8px]">Day</span>
-              </>
-            )}
-          </button>
-
-          {/* 3D Mode Toggle Button */}
-          <button
-            onClick={onToggleThreeD}
-            className="flex items-center gap-1.5 cursor-pointer text-brand-text hover:text-[#FF3E00] transition-colors font-mono font-bold text-[9px] uppercase tracking-wider px-2.5 py-1.5 border border-card-border hover:border-[#FF3E00]/30 bg-card-bg/25 rounded-md h-max select-none shadow-sm ml-2"
-            title="Toggle 3D Immersive Background"
-          >
-            <div className={`w-2 h-2 rounded-full shrink-0 ${threeDStyle !== "off" ? 'bg-[#FF3E00] animate-pulse' : 'bg-brand-muted/60'}`} />
-            <span className="leading-none text-[8px]">{threeDStyle !== "off" ? "3D: ON" : "3D: OFF"}</span>
-          </button>
-
-          {/* Sub-menu showing style options when 3D is active */}
-          {threeDStyle !== "off" && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-1 bg-card-bg/10 border border-card-border/60 rounded-md p-0.5 ml-1.5"
+          {/* Customization Settings Gear / Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              className="flex items-center gap-1.5 cursor-pointer text-brand-text hover:text-[#FF3E00] transition-colors font-mono font-bold text-[9px] uppercase tracking-wider px-2.5 py-1.5 border border-card-border hover:border-[#FF3E00]/30 bg-card-bg/25 rounded-md h-max select-none shadow-sm ml-2"
+              title="Customize Theme and 3D Viewport"
             >
-              {(["origami", "console", "highway", "blueprint", "typography", "hologram"] as const).map((style) => {
-                const isActive = threeDStyle === style;
-                const labels: Record<string, string> = {
-                  origami: "Origami",
-                  console: "Console",
-                  highway: "Highway",
-                  blueprint: "Blueprint",
-                  typography: "Typo",
-                  hologram: "Hologram"
-                };
-                return (
-                  <button
-                    key={style}
-                    onClick={() => onChangeThreeDStyle(style)}
-                    className={`cursor-pointer px-2 py-1 rounded-sm text-[8px] font-mono uppercase tracking-wider transition-colors ${
-                      isActive 
-                        ? "text-black bg-[#FF3E00] font-black" 
-                        : "text-brand-muted hover:text-brand-text"
-                    }`}
-                  >
-                    {labels[style]}
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
+              <Sliders className="w-3.5 h-3.5 text-[#FF3E00] shrink-0" />
+              <span className="leading-none text-[8px]">Settings</span>
+            </button>
+
+            <AnimatePresence>
+              {settingsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute right-0 mt-2 w-60 bg-black/95 backdrop-blur-md border border-card-border rounded-md shadow-2xl p-4 z-50 text-left font-mono flex flex-col gap-3"
+                >
+                  {/* Theme Switch Row */}
+                  <div className="flex items-center justify-between border-b border-card-border/40 pb-2">
+                    <span className="text-[9px] font-bold text-brand-muted uppercase">Theme</span>
+                    <button
+                      onClick={onToggleTheme}
+                      className="cursor-pointer px-2 py-1 border border-card-border bg-card-bg/20 hover:border-[#FF3E00] hover:text-[#FF3E00] text-[8px] rounded uppercase font-bold transition-colors"
+                    >
+                      {theme === "dark" ? "Night Mode 🌙" : "Day Mode ☀️"}
+                    </button>
+                  </div>
+
+                  {/* 3D Mode Toggle Row */}
+                  <div className="flex items-center justify-between border-b border-card-border/40 pb-2">
+                    <span className="text-[9px] font-bold text-brand-muted uppercase">3D Background</span>
+                    <button
+                      onClick={onToggleThreeD}
+                      className={`cursor-pointer px-2.5 py-1 border text-[8px] rounded uppercase font-bold transition-colors ${
+                        threeDStyle !== "off"
+                          ? "bg-[#FF3E00] text-black border-[#FF3E00] font-black"
+                          : "border-card-border bg-card-bg/20 hover:border-[#FF3E00] hover:text-[#FF3E00]"
+                      }`}
+                    >
+                      {threeDStyle !== "off" ? "Active: ON" : "Active: OFF"}
+                    </button>
+                  </div>
+
+                  {/* 3D Experience Selector (only if 3D is active) */}
+                  {threeDStyle !== "off" && (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[9px] font-bold text-brand-muted uppercase">Experience Mode</span>
+                      <div className="grid grid-cols-2 gap-1">
+                        {(["origami", "console", "highway", "blueprint", "typography", "hologram"] as const).map((style) => {
+                          const isActive = threeDStyle === style;
+                          const labels: Record<string, string> = {
+                            origami: "Origami",
+                            console: "Console",
+                            highway: "Highway",
+                            blueprint: "Blueprint",
+                            typography: "Typo",
+                            hologram: "Hologram"
+                          };
+                          return (
+                            <button
+                              key={style}
+                              onClick={() => onChangeThreeDStyle(style)}
+                              className={`cursor-pointer px-1.5 py-1 text-center text-[7.5px] font-bold uppercase rounded-sm border transition-all ${
+                                isActive
+                                  ? "text-black bg-[#FF3E00] border-[#FF3E00] font-black"
+                                  : "text-brand-muted border-card-border/30 bg-card-bg/20 hover:text-brand-text hover:border-card-border"
+                              }`}
+                            >
+                              {labels[style]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           <a
             href="/My Resume.pdf"

@@ -297,6 +297,129 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
   );
 }
 
+function CMYKRegistrationScene({ scrollProgressRef, theme }: { scrollProgressRef: React.MutableRefObject<number>; theme: "dark" | "light" }) {
+  const meshRef = useRef<THREE.Group>(null);
+  
+  const smoothProgressRef = useRef(0);
+  const velocityRef = useRef(0);
+  
+  const { viewport } = useThree();
+  const scale = Math.min(1.0, viewport.width / 4.8) * 0.85;
+
+  useFrame(() => {
+    const target = scrollProgressRef.current;
+    const current = smoothProgressRef.current;
+    const stiffness = 0.035;
+    const damping = 0.22;
+    
+    const force = (target - current) * stiffness;
+    velocityRef.current += force - velocityRef.current * damping;
+    smoothProgressRef.current += velocityRef.current;
+    
+    const progress = smoothProgressRef.current;
+
+    const rangeStart = 0.75;
+    const rangeEnd = 1.0;
+    const activeProgress = Math.max(0, Math.min(1, (progress - rangeStart) / (rangeEnd - rangeStart)));
+
+    if (meshRef.current) {
+      meshRef.current.rotation.y = (1 - activeProgress) * 0.5;
+      
+      const opacity = progress >= 0.70 
+        ? (progress < 0.76 ? (progress - 0.70) / 0.06 : 1) 
+        : 0;
+
+      meshRef.current.visible = opacity > 0;
+    }
+  });
+
+  const rangeStart = 0.75;
+  const rangeEnd = 1.0;
+  const activeProgress = Math.max(0, Math.min(1, (smoothProgressRef.current - rangeStart) / (rangeEnd - rangeStart)));
+  const splitAmount = Math.max(0, 1 - activeProgress);
+
+  const ringColor = theme === "dark" ? "#ffffff" : "#1a1a1a";
+  const labelColor = theme === "dark" ? "#888888" : "#444444";
+  const accuracy = Math.round(activeProgress * 100);
+  const opacity = smoothProgressRef.current >= 0.70 ? 1 : 0;
+
+  return (
+    <group ref={meshRef} position={[0, 0, -3.5]} scale={[scale, scale, scale]}>
+      {/* Target Registration Mark Crosshair */}
+      <group scale={[0.8, 0.8, 0.8]}>
+        {/* Cyan split cross */}
+        <group position={[-splitAmount * 0.3, splitAmount * 0.3, 0]}>
+          <Line points={[[-0.6, 0, 0], [0.6, 0, 0]]} color="#06b6d4" lineWidth={2} />
+          <Line points={[[0, -0.6, 0], [0, 0.6, 0]]} color="#06b6d4" lineWidth={2} />
+          <Line points={[[0.4, 0.4, 0], [-0.4, -0.4, 0]]} color="#06b6d4" lineWidth={1} />
+        </group>
+
+        {/* Magenta split cross */}
+        <group position={[splitAmount * 0.3, -splitAmount * 0.3, 0]}>
+          <Line points={[[-0.6, 0, 0], [0.6, 0, 0]]} color="#ec4899" lineWidth={2} />
+          <Line points={[[0, -0.6, 0], [0, 0.6, 0]]} color="#ec4899" lineWidth={2} />
+          <Line points={[[0.4, -0.4, 0], [-0.4, 0.4, 0]]} color="#ec4899" lineWidth={1} />
+        </group>
+
+        {/* Yellow split cross */}
+        <group position={[-splitAmount * 0.2, -splitAmount * 0.2, 0]}>
+          <Line points={[[-0.6, 0, 0], [0.6, 0, 0]]} color="#eab308" lineWidth={2} />
+          <Line points={[[0, -0.6, 0], [0, 0.6, 0]]} color="#eab308" lineWidth={2} />
+        </group>
+        
+        {/* Core Aligned target ring */}
+        <mesh>
+          <ringGeometry args={[0.3, 0.33, 32]} />
+          <meshBasicMaterial color={ringColor} />
+        </mesh>
+        <mesh>
+          <ringGeometry args={[0.45, 0.47, 32]} />
+          <meshBasicMaterial color={ringColor} />
+        </mesh>
+
+        {/* Live Alignment Telemetry readout next to target */}
+        {opacity > 0 && (
+          <group position={[0.7, 0, 0]}>
+            <Text
+              position={[0, 0.15, 0]}
+              fontSize={0.065}
+              color="#FF3E00"
+              anchorX="left"
+              anchorY="middle"
+              transparent
+              opacity={opacity * 0.8}
+            >
+              // PLATE_ALIGN
+            </Text>
+            <Text
+              position={[0, -0.05, 0]}
+              fontSize={0.075}
+              color={ringColor}
+              anchorX="left"
+              anchorY="middle"
+              transparent
+              opacity={opacity * 0.9}
+            >
+              {`ACCURACY: ${accuracy}%`}
+            </Text>
+            <Text
+              position={[0, -0.22, 0]}
+              fontSize={0.055}
+              color={labelColor}
+              anchorX="left"
+              anchorY="middle"
+              transparent
+              opacity={opacity * 0.6}
+            >
+              {accuracy === 100 ? "STATUS: PRESS_READY" : "STATUS: CALIBRATING..."}
+            </Text>
+          </group>
+        )}
+      </group>
+    </group>
+  );
+}
+
 // ==========================================
 // CONCEPT 1: Retro Industrial Console (CRT Screen, switches, indicator bulbs)
 // ==========================================
