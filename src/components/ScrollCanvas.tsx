@@ -611,7 +611,8 @@ function CMYKRegistrationScene({ scrollProgressRef, theme }: { scrollProgressRef
 // ==========================================
 // CONCEPT 1: Retro Industrial Console (CRT Screen, switches, indicator bulbs)
 // ==========================================
-function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
+function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme: _theme }: SceneProps) {
+  const theme = "dark"; // Force dark mode styling for the industrial CRT console
   const panelRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
   
@@ -629,8 +630,8 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
   });
 
   const progress = smoothProgressRef.current;
-  const strokeColor = theme === "dark" ? "#00ff66" : "#00e65c";
-  const labelColor = theme === "dark" ? "#888888" : "#8ab39c";
+  const strokeColor = "#00ff66";
+  const labelColor = "#888888";
   
   // CRT Screen flickering value
   const flicker = useMemo(() => Math.sin(Math.random() * Math.PI) * 0.03 + 0.97, []);

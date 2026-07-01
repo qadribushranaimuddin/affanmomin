@@ -128,7 +128,7 @@ export default function AboutSection() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         
         {/* Left column: Title and Tab Selectors */}
-        <ParallaxWrapper speed={0.05} className="lg:col-span-3 h-full">
+        <ParallaxWrapper speed={0.05} className="lg:col-span-3 h-full" disabled={isMobile}>
           <div className="flex flex-col justify-between h-full space-y-8">
             <div>
             <motion.div
@@ -227,12 +227,12 @@ export default function AboutSection() {
             </div>
 
             {/* Tab Selector Buttons - Bento Styling */}
-            <div className="flex flex-row lg:flex-col gap-2 font-mono text-[10px] uppercase tracking-wider">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-col gap-2 font-mono text-[10px] uppercase tracking-wider w-full">
               {(["bio", "education", "hobbies"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-1 py-3 px-2 sm:px-4 text-center lg:text-left cursor-pointer transition-all border rounded-lg ${
+                  className={`py-3 px-2 sm:px-4 text-center lg:text-left cursor-pointer transition-all border rounded-lg ${
                     activeTab === tab
                       ? "bg-[#FF3E00] text-black font-extrabold font-black border-[#FF3E00] shadow-[0_0_15px_rgba(255,62,0,0.2)]"
                       : "bg-[#111]/30 backdrop-blur-md text-[#A3A3A3] border-white/5 hover:border-[#FF3E00]/40 hover:text-white"
@@ -248,10 +248,10 @@ export default function AboutSection() {
               <a
                 href="/My Resume.pdf"
                 download="Momin_Affan_Resume.pdf"
-                className="py-3 px-4 text-left cursor-pointer transition-all border rounded-lg bg-[#111]/30 backdrop-blur-md text-[#A3A3A3] border-white/5 hover:border-[#FF3E00] hover:text-[#FF3E00] flex items-center justify-between"
+                className="py-3 px-2 sm:px-4 text-center lg:text-left cursor-pointer transition-all border rounded-lg bg-[#111]/30 backdrop-blur-md text-[#A3A3A3] border-white/5 hover:border-[#FF3E00]/40 hover:text-white flex items-center justify-center lg:justify-between gap-1.5"
               >
                 <span>Download Resume</span>
-                <span className="text-[8px] font-bold opacity-80 uppercase tracking-widest">[PDF]</span>
+                <span className="text-[8px] font-bold opacity-80 uppercase tracking-widest hidden lg:inline">[PDF]</span>
               </a>
             </div>
           </div>
