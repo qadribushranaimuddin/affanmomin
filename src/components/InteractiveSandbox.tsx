@@ -1037,8 +1037,9 @@ export default function InteractiveSandbox() {
                     </button>
                   ))}
               </div>
+            </div>
 
-              {/* 3D Long Shadow Effect controls */}
+            {/* 3D Long Shadow Effect controls */}
               <div className="border-t border-white/5 pt-2 mt-2 space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="text-[8px] font-mono text-gray-400 uppercase block">3D Long Shadow Extrude</label>
@@ -1061,7 +1062,7 @@ export default function InteractiveSandbox() {
                   </label>
                 </div>
 
-                {(selectedElement.longShadowX !== undefined || selectedElement.longShadowY !== undefined) && (
+                {(selectedElement.longShadowX !== undefined || selectedElement.longShadowY !== undefined) &&
                   <div className="space-y-1.5 animate-fadeIn">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -1098,7 +1099,7 @@ export default function InteractiveSandbox() {
                       />
                     </div>
                   </div>
-                )}
+                }
               </div>
             </div>
           )}

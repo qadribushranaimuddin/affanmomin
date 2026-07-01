@@ -364,11 +364,11 @@ export default function Navbar({
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ type: "spring", stiffness: 220, damping: 25 }}
-            className="lg:hidden absolute top-full left-0 w-full mobile-menu-bg border-b border-card-border py-6 px-6 shadow-2xl z-40 max-h-[calc(100vh-6rem)] overflow-y-auto overscroll-contain"
+            className="lg:hidden absolute top-full left-0 w-full h-[calc(100vh-100%)] mobile-menu-bg border-b border-card-border py-6 px-6 pb-24 shadow-2xl z-40 overflow-y-auto overscroll-contain"
           >
             <div className="flex flex-col gap-3 font-mono text-xs uppercase tracking-wider">
               {navItems.map((item) => (
