@@ -217,19 +217,26 @@ export default function App() {
       // Ignore security errors in sandboxed iframes
     }
   }, [theme]);
-  const [threeDActive, setThreeDActive] = useState<boolean>(() => {
+  const [threeDStyle, setThreeDStyle] = useState<string>(() => {
     try {
-      return (localStorage.getItem("3d-active") === "true");
+      return localStorage.getItem("3d-style") || "off";
     } catch (e) {
-      return false;
+      return "off";
     }
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem("3d-active", String(threeDActive));
+      localStorage.setItem("3d-style", threeDStyle);
     } catch (e) {}
-  }, [threeDActive]);
+  }, [threeDStyle]);
+
+  const toggleThreeDStyle = () => {
+    const styles = ["off", "origami", "console", "highway", "blueprint", "typography", "hologram"];
+    const currentIndex = styles.indexOf(threeDStyle);
+    const nextIndex = (currentIndex + 1) % styles.length;
+    setThreeDStyle(styles[nextIndex]);
+  };
   const [activeSection, setActiveSection] = useState<string>('hero');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
@@ -599,8 +606,8 @@ export default function App() {
         onNavigate={scrollToEl} 
         theme={theme}
         onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
-        threeDActive={threeDActive}
-        onToggleThreeD={() => setThreeDActive((prev) => !prev)}
+        threeDStyle={threeDStyle}
+        onToggleThreeD={toggleThreeDStyle}
       />
 
       {/* Main Structural Layout Container */}
@@ -964,7 +971,7 @@ export default function App() {
         </>
       )}
       <Analytics />
-      {threeDActive && <ScrollCanvas theme={theme} />}
+      {threeDStyle !== "off" && <ScrollCanvas theme={theme} style={threeDStyle} />}
     </div>
   );
 }
