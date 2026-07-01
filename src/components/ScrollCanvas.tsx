@@ -178,20 +178,13 @@ function createBrushedMetalTexture() {
 function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const meshRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
   const { viewport } = useThree();
   const scale = Math.min(1.2, viewport.width / 4.8) * 0.9;
 
   useFrame(() => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const stiffness = 0.035;
-    const damping = 0.22;
-    
-    const force = (target - current) * stiffness;
-    velocityRef.current += force - velocityRef.current * damping;
-    smoothProgressRef.current += velocityRef.current;
-    
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
 
     if (meshRef.current) {
@@ -278,7 +271,6 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
 function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const rollerGroupRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.2) * 0.8;
   const metalBumpTexture = useMemo(() => createBrushedMetalTexture(), []);
@@ -296,13 +288,7 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
   useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const stiffness = 0.035;
-    const damping = 0.22;
-    
-    const force = (target - current) * stiffness;
-    velocityRef.current += force - velocityRef.current * damping;
-    smoothProgressRef.current += velocityRef.current;
-    
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
     const rangeStart = 0.22;
     const rangeEnd = 0.52;
@@ -366,7 +352,6 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
 function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const groupRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
   const { pointer } = useThree();
 
   const initialPoints = [
@@ -380,10 +365,7 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
   useFrame(() => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const force = (target - current) * 0.035;
-    velocityRef.current += force - velocityRef.current * 0.22;
-    smoothProgressRef.current += velocityRef.current;
-    
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
     const rangeStart = 0.50;
     const rangeEnd = 0.78;
@@ -438,21 +420,13 @@ function CMYKRegistrationScene({ scrollProgressRef, theme }: { scrollProgressRef
   const meshRef = useRef<THREE.Group>(null);
   
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
-  
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 4.8) * 0.85;
 
   useFrame(() => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const stiffness = 0.035;
-    const damping = 0.22;
-    
-    const force = (target - current) * stiffness;
-    velocityRef.current += force - velocityRef.current * damping;
-    smoothProgressRef.current += velocityRef.current;
-    
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
 
     const rangeStart = 0.75;
@@ -563,14 +537,11 @@ function CMYKRegistrationScene({ scrollProgressRef, theme }: { scrollProgressRef
 function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const panelRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
   
   useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const force = (target - current) * 0.035;
-    velocityRef.current += force - velocityRef.current * 0.22;
-    smoothProgressRef.current += velocityRef.current;
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
 
     if (panelRef.current) {
@@ -700,8 +671,8 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
 function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
   const roadRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
   const { camera } = useThree();
+  const lookTargetRef = useRef<THREE.Vector3 | null>(null);
 
   const splinePoints = useMemo(() => {
     const pts = [];
@@ -717,21 +688,30 @@ function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
   useFrame(() => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const force = (target - current) * 0.035;
-    velocityRef.current += force - velocityRef.current * 0.22;
-    smoothProgressRef.current += velocityRef.current;
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.025);
     const progress = smoothProgressRef.current;
 
     const speedIndex = progress * 70;
-    camera.position.z = -speedIndex * 1.25 + 3.5;
-    camera.position.x = Math.sin(speedIndex * 0.11) * 2.2;
-    camera.position.y = Math.cos(speedIndex * 0.075) * 0.95;
-    
-    camera.lookAt(
-      Math.sin((speedIndex + 4) * 0.11) * 2.2,
-      Math.cos((speedIndex + 4) * 0.075) * 0.95,
-      -(speedIndex + 4) * 1.25
-    );
+    const targetZ = -speedIndex * 1.25 + 3.5;
+    const targetX = Math.sin(speedIndex * 0.11) * 2.2;
+    const targetY = Math.cos(speedIndex * 0.075) * 0.95;
+
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.03);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.03);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.03);
+
+    const lookTargetX = Math.sin((speedIndex + 4) * 0.11) * 2.2;
+    const lookTargetY = Math.cos((speedIndex + 4) * 0.075) * 0.95;
+    const lookTargetZ = -(speedIndex + 4) * 1.25;
+
+    if (!lookTargetRef.current) {
+      lookTargetRef.current = new THREE.Vector3(lookTargetX, lookTargetY, lookTargetZ);
+    } else {
+      lookTargetRef.current.x = THREE.MathUtils.lerp(lookTargetRef.current.x, lookTargetX, 0.03);
+      lookTargetRef.current.y = THREE.MathUtils.lerp(lookTargetRef.current.y, lookTargetY, 0.03);
+      lookTargetRef.current.z = THREE.MathUtils.lerp(lookTargetRef.current.z, lookTargetZ, 0.03);
+    }
+    camera.lookAt(lookTargetRef.current);
   });
 
   const lineColor = theme === "dark" ? "#00ffff" : "#0284c7";
@@ -833,16 +813,13 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
   const modelRef = useRef<THREE.Group>(null);
   const compassRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
   const { viewport, pointer } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.0) * 0.85;
 
   useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const force = (target - current) * 0.035;
-    velocityRef.current += force - velocityRef.current * 0.22;
-    smoothProgressRef.current += velocityRef.current;
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
 
     if (modelRef.current) {
@@ -949,7 +926,6 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
 function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const groupRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.2) * 0.95;
 
@@ -967,9 +943,7 @@ function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProp
   useFrame(() => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const force = (target - current) * 0.035;
-    velocityRef.current += force - velocityRef.current * 0.22;
-    smoothProgressRef.current += velocityRef.current;
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
 
     if (groupRef.current) {
@@ -1055,16 +1029,13 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
   const ring2Ref = useRef<THREE.Group>(null);
   
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 4.8) * 0.9;
 
   useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const force = (target - current) * 0.035;
-    velocityRef.current += force - velocityRef.current * 0.22;
-    smoothProgressRef.current += velocityRef.current;
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
 
     // Transformers style unfolding offset along Y-axis (Concept 5 Upgrade)
@@ -1186,7 +1157,6 @@ function CameraDirector({
 }) {
   const { camera, pointer } = useThree();
   const smoothProgressRef = useRef(0);
-  const velocityRef = useRef(0);
 
   useEffect(() => {
     camera.rotation.set(0, 0, 0);
@@ -1195,12 +1165,7 @@ function CameraDirector({
   useFrame(() => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
-    const stiffness = 0.035;
-    const damping = 0.22;
-    
-    const force = (target - current) * stiffness;
-    velocityRef.current += force - velocityRef.current * damping;
-    smoothProgressRef.current += velocityRef.current;
+    smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.025);
     const progress = smoothProgressRef.current;
 
     let targetX = 0;
@@ -1237,12 +1202,12 @@ function CameraDirector({
       targetZ = 3.4;
     }
 
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX + pointer.x * 0.45, 0.05);
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY + pointer.y * 0.35, 0.05);
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.05);
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX + pointer.x * 0.45, 0.025);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY + pointer.y * 0.35, 0.025);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.025);
     
-    camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, -pointer.x * 0.08, 0.05);
-    camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, pointer.y * 0.08, 0.05);
+    camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, -pointer.x * 0.08, 0.025);
+    camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, pointer.y * 0.08, 0.025);
   });
 
   return null;
