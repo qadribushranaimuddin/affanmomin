@@ -40,6 +40,10 @@ interface CanvasElement {
   isHidden: boolean;
   curveRadius?: number;
   activeFilter?: 'none' | 'duotone' | 'neon' | 'halftone' | 'engraved';
+  strokeStyle?: 'solid' | 'dashed' | 'dotted';
+  longShadowX?: number;
+  longShadowY?: number;
+  longShadowColor?: string;
 }
 
 interface PathNode {
@@ -590,39 +594,52 @@ export default function InteractiveSandbox() {
       const isCurved = el.curveRadius && el.curveRadius > 0;
       const r = el.curveRadius || 120;
       const pathD = `M 0,${r} A ${r},${r} 0 0,1 ${el.width},${r}`;
+      const hasShadow = el.longShadowX || el.longShadowY;
 
-      return (
-        <g key={el.id} transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`} filter={filterId}>
-          {isCurved ? (
-            <>
-              <path id={`path-${el.id}`} d={pathD} fill="none" stroke="none" />
-              <text
-                fill={el.color}
-                fontSize={el.fontSize}
-                fontFamily={el.fontFamily}
-                letterSpacing={el.letterSpacing}
-                className="select-none font-bold text-center"
-                onMouseDown={(e) => handleMouseDown(e, el.id)}
-              >
-                <textPath href={`#path-${el.id}`} startOffset="50%" textAnchor="middle">
-                  {el.content}
-                </textPath>
-              </text>
-            </>
-          ) : (
+      const getTextNode = (isShadow: boolean = false) => {
+        const fillColor = isShadow ? (el.longShadowColor || '#000000') : el.color;
+        const handleDown = isShadow ? undefined : (e: any) => handleMouseDown(e, el.id);
+
+        return isCurved ? (
+          <>
+            <path id={`path-${el.id}`} d={pathD} fill="none" stroke="none" />
             <text
-              x={0}
-              y={el.height - 10}
-              fill={el.color}
+              fill={fillColor}
               fontSize={el.fontSize}
               fontFamily={el.fontFamily}
               letterSpacing={el.letterSpacing}
-              className="select-none font-bold"
-              onMouseDown={(e) => handleMouseDown(e, el.id)}
+              className="select-none font-bold text-center"
+              onMouseDown={handleDown}
             >
-              {el.content}
+              <textPath href={`#path-${el.id}`} startOffset="50%" textAnchor="middle">
+                {el.content}
+              </textPath>
             </text>
+          </>
+        ) : (
+          <text
+            x={0}
+            y={el.height - 10}
+            fill={fillColor}
+            fontSize={el.fontSize}
+            fontFamily={el.fontFamily}
+            letterSpacing={el.letterSpacing}
+            className="select-none font-bold"
+            onMouseDown={handleDown}
+          >
+            {el.content}
+          </text>
+        );
+      };
+
+      return (
+        <g key={el.id} transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`} filter={filterId}>
+          {hasShadow && (
+            <g transform={`translate(${el.longShadowX || 0}, ${el.longShadowY || 0})`} opacity="0.4" style={{ filter: 'blur(2px)' }}>
+              {getTextNode(true)}
+            </g>
           )}
+          {getTextNode(false)}
         </g>
       );
     }
@@ -644,15 +661,27 @@ export default function InteractiveSandbox() {
     }
 
     if (el.type === 'shape') {
-      const getShapeElement = () => {
+      const getStrokeDashArray = (style?: 'solid' | 'dashed' | 'dotted') => {
+        if (style === 'dashed') return '4 4';
+        if (style === 'dotted') return '1 3';
+        return undefined;
+      };
+
+      const getShapeElement = (isShadow: boolean = false) => {
+        const fillColor = isShadow ? (el.color === 'none' ? 'none' : (el.longShadowColor || '#000000')) : el.color;
+        const strokeColor = isShadow ? (el.strokeColor === 'none' ? 'none' : (el.longShadowColor || '#000000')) : el.strokeColor;
+        const dashArray = getStrokeDashArray(el.strokeStyle);
+        const handleDown = isShadow ? undefined : (e: any) => handleMouseDown(e, el.id);
+
         // Decode uploaded SVG, or draw library shapes
         if (el.content.startsWith("custom-svg:")) {
           const decoded = atob(el.content.split(":")[1]);
           return (
             <g 
               transform={`translate(${el.x}, ${el.y}) rotate(${el.rotation})`}
-              onMouseDown={(e) => handleMouseDown(e, el.id)}
+              onMouseDown={handleDown}
               dangerouslySetInnerHTML={{ __html: decoded }}
+              style={isShadow ? { fill: fillColor, stroke: strokeColor } : undefined}
             />
           );
         }
@@ -664,10 +693,11 @@ export default function InteractiveSandbox() {
               y={el.y}
               width={el.width}
               height={el.height}
-              fill={el.color}
-              stroke={el.strokeColor}
+              fill={fillColor}
+              stroke={strokeColor}
               strokeWidth={el.strokeWidth}
-              onMouseDown={(e) => handleMouseDown(e, el.id)}
+              strokeDasharray={dashArray}
+              onMouseDown={handleDown}
             />
           );
         }
@@ -676,10 +706,11 @@ export default function InteractiveSandbox() {
           return (
             <polygon
               points={`${el.x},${el.y + el.height / 2} ${el.x + el.width / 4},${el.y} ${el.x + (el.width * 3) / 4},${el.y} ${el.x + el.width},${el.y + el.height / 2} ${el.x + (el.width * 3) / 4},${el.y + el.height} ${el.x + el.width / 4},${el.y + el.height}`}
-              fill={el.color}
-              stroke={el.strokeColor}
+              fill={fillColor}
+              stroke={strokeColor}
               strokeWidth={el.strokeWidth}
-              onMouseDown={(e) => handleMouseDown(e, el.id)}
+              strokeDasharray={dashArray}
+              onMouseDown={handleDown}
             />
           );
         }
@@ -688,10 +719,11 @@ export default function InteractiveSandbox() {
           return (
             <polygon
               points={`${el.x + el.width/2},${el.y} ${el.x + el.width*0.65},${el.y + el.height*0.35} ${el.x + el.width},${el.y + el.height*0.35} ${el.x + el.width*0.75},${el.y + el.height*0.6} ${el.x + el.width*0.85},${el.y + el.height} ${el.x + el.width/2},${el.y + el.height*0.75} ${el.x + el.width*0.15},${el.y + el.height} ${el.x + el.width*0.25},${el.y + el.height*0.6} ${el.x},${el.y + el.height*0.35} ${el.x + el.width*0.35},${el.y + el.height*0.35}`}
-              fill={el.color}
-              stroke={el.strokeColor}
+              fill={fillColor}
+              stroke={strokeColor}
               strokeWidth={el.strokeWidth}
-              onMouseDown={(e) => handleMouseDown(e, el.id)}
+              strokeDasharray={dashArray}
+              onMouseDown={handleDown}
             />
           );
         }
@@ -703,9 +735,10 @@ export default function InteractiveSandbox() {
               y1={el.y + el.height / 2}
               x2={el.x + el.width}
               y2={el.y + el.height / 2}
-              stroke={el.strokeColor}
+              stroke={strokeColor}
               strokeWidth={el.strokeWidth}
-              onMouseDown={(e) => handleMouseDown(e, el.id)}
+              strokeDasharray={dashArray}
+              onMouseDown={handleDown}
             />
           );
         }
@@ -713,9 +746,16 @@ export default function InteractiveSandbox() {
         return null;
       };
 
+      const hasShadow = el.longShadowX || el.longShadowY;
+
       return (
         <g key={el.id} filter={filterId}>
-          {getShapeElement()}
+          {hasShadow && (
+            <g transform={`translate(${el.longShadowX || 0}, ${el.longShadowY || 0})`} opacity="0.45" style={{ filter: 'blur(2.5px)' }}>
+              {getShapeElement(true)}
+            </g>
+          )}
+          {getShapeElement(false)}
         </g>
       );
     }
@@ -935,6 +975,27 @@ export default function InteractiveSandbox() {
                       />
                     </div>
                   </div>
+
+                  <div className="mt-2">
+                    <label className="text-[8px] font-mono text-gray-400 uppercase block mb-1">Border Line Style</label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {([
+                        { id: 'solid', label: 'Solid' },
+                        { id: 'dashed', label: 'Dashed' },
+                        { id: 'dotted', label: 'Dotted' }
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, strokeStyle: opt.id } : el))}
+                          className={`text-[8px] font-mono py-1 rounded-sm border cursor-pointer transition-colors ${
+                            (selectedElement.strokeStyle || 'solid') === opt.id ? "border-[#FF3E00] text-[#FF3E00] font-bold bg-[#FF3E00]/5" : "border-white/5 text-gray-500 hover:text-white"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -975,7 +1036,69 @@ export default function InteractiveSandbox() {
                       {f.label}
                     </button>
                   ))}
+              </div>
+
+              {/* 3D Long Shadow Effect controls */}
+              <div className="border-t border-white/5 pt-2 mt-2 space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-[8px] font-mono text-gray-400 uppercase block">3D Long Shadow Extrude</label>
+                  <label className="flex items-center gap-1 font-mono text-[8px] text-gray-500 hover:text-white cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={!!(selectedElement.longShadowX !== undefined || selectedElement.longShadowY !== undefined)}
+                      onChange={(e) => {
+                        const active = e.target.checked;
+                        setElements(prev => prev.map(el => el.id === selectedElement.id ? { 
+                          ...el, 
+                          longShadowX: active ? 6 : undefined, 
+                          longShadowY: active ? 6 : undefined,
+                          longShadowColor: active ? '#000000' : undefined 
+                        } : el));
+                      }}
+                      className="accent-[#FF3E00] cursor-pointer"
+                    />
+                    <span>Enable</span>
+                  </label>
                 </div>
+
+                {(selectedElement.longShadowX !== undefined || selectedElement.longShadowY !== undefined) && (
+                  <div className="space-y-1.5 animate-fadeIn">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[7.5px] font-mono text-gray-500 block">Offset X: {selectedElement.longShadowX || 0}px</label>
+                        <input
+                          type="range"
+                          min="-20"
+                          max="20"
+                          value={selectedElement.longShadowX || 0}
+                          onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, longShadowX: Number(e.target.value) } : el))}
+                          className="w-full h-1 bg-white/10 rounded appearance-none cursor-pointer mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[7.5px] font-mono text-gray-500 block">Offset Y: {selectedElement.longShadowY || 0}px</label>
+                        <input
+                          type="range"
+                          min="-20"
+                          max="20"
+                          value={selectedElement.longShadowY || 0}
+                          onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, longShadowY: Number(e.target.value) } : el))}
+                          className="w-full h-1 bg-white/10 rounded appearance-none cursor-pointer mt-1"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-1 mt-1">
+                      <label className="text-[7.5px] font-mono text-gray-500">Shadow Color Hex</label>
+                      <input
+                        type="text"
+                        value={selectedElement.longShadowColor || '#000000'}
+                        onChange={(e) => setElements(prev => prev.map(el => el.id === selectedElement.id ? { ...el, longShadowColor: e.target.value } : el))}
+                        className="bg-[#161616] border border-white/5 text-[9px] font-mono text-white p-1 rounded-sm focus:outline-none focus:border-[#FF3E00]"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
