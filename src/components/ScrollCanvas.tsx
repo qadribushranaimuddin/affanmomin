@@ -62,13 +62,13 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
 
   const renderBoxPanels = () => (
     <>
-      {/* Front Panel */}
+      {/* Front Panel with printed label */}
       <mesh position={[0, 0, 0.5]} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 0.02]} />
         <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
       </mesh>
 
-      {/* Back Panel */}
+      {/* Back Panel with printed calibration spec */}
       <mesh position={[0, 0, -0.5]} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 0.02]} />
         <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
@@ -132,6 +132,37 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
         </>
       )}
 
+      {/* Printed typography directly on box faces (origami blueprint labels) */}
+      {opacity > 0 && (
+        <group position={[0, 0, 0.515]}>
+          <Text
+            fontSize={0.065}
+            color="#ffffff"
+            anchorX="center"
+            anchorY="middle"
+            transparent
+            opacity={opacity * 0.95}
+          >
+            MOMIN // SPEC
+          </Text>
+        </group>
+      )}
+
+      {opacity > 0 && (
+        <group position={[0, 0, -0.515]} rotation={[0, Math.PI, 0]}>
+          <Text
+            fontSize={0.065}
+            color="#ffffff"
+            anchorX="center"
+            anchorY="middle"
+            transparent
+            opacity={opacity * 0.95}
+          >
+            TRIM_LINE_OK
+          </Text>
+        </group>
+      )}
+
       {/* Technical Blueprint Dimension Annotations */}
       {opacity > 0 && (
         <group position={[0, -0.7, 0.5]}>
@@ -192,15 +223,14 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
     x: 0,
     y: 0,
     z: 0,
-    t: (i / particleCount) * Math.PI * 2, // evenly distributed initial phases
+    t: (i / particleCount) * Math.PI * 2,
     speed: 0.012 + Math.random() * 0.008,
     color: i % 3 === 0 ? "#06b6d4" : i % 3 === 1 ? "#ec4899" : "#eab308"
   })));
 
-  // Array of mesh refs to update positions directly inside useFrame without triggering re-renders
   const sphereRefs = useRef<THREE.Group[]>([]);
 
-  useFrame(() => {
+  useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
     const stiffness = 0.035;
@@ -216,9 +246,15 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
     const rangeEnd = 0.52;
     const activeProgress = Math.max(0, Math.min(1, (progress - rangeStart) / (rangeEnd - rangeStart)));
 
+    // Mechanical vibration offset proportional to scroll speed (Option 3 Upgrade)
+    const vibration = Math.sin(state.clock.elapsedTime * 80) * scrollSpeedRef.current * 0.07;
+
     if (rollerGroupRef.current) {
       rollerGroupRef.current.rotation.z = -activeProgress * Math.PI * 4;
       
+      // Squeeze position slightly with vibration
+      rollerGroupRef.current.position.y = 0.2 + vibration;
+
       const opacity = progress >= 0.18 && progress <= 0.62 
         ? (progress < 0.24 ? (progress - 0.18) / 0.06 : (progress > 0.56 ? (0.62 - progress) / 0.06 : 1)) 
         : 0;
@@ -233,9 +269,8 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
       });
     }
 
-    // Advance and map the flowing ink particle positions along the press path
     const pts = particlesRef.current;
-    const speedMultiplier = 1.0 + scrollSpeedRef.current * 15; // particles flow faster during scroll
+    const speedMultiplier = 1.0 + scrollSpeedRef.current * 15;
     
     pts.forEach((p, idx) => {
       p.t += p.speed * speedMultiplier;
@@ -243,14 +278,13 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
         p.t = 0;
       }
       
-      // Fluid path winding between cylinders
       p.x = -1.4 + (p.t / (Math.PI * 2)) * 2.8;
       p.y = Math.sin(p.t * 3.5) * 0.38 - 0.22;
       p.z = Math.cos(p.t * 2.2) * 0.18;
 
       const sphereGroup = sphereRefs.current[idx];
       if (sphereGroup) {
-        sphereGroup.position.set(p.x, p.y, p.z);
+        sphereGroup.position.set(p.x, p.y + vibration, p.z);
       }
     });
   });
@@ -283,7 +317,7 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
         <meshStandardMaterial color={paperColor} roughness={0.9} />
       </mesh>
 
-      {/* Flowing liquid ink stream overlay (Option 3) */}
+      {/* Flowing liquid ink stream overlay */}
       {opacity > 0 && (
         <group ref={sphereGroupRef}>
           {particlesRef.current.map((pt, idx) => (
@@ -309,6 +343,7 @@ function PressroomRollers({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
 function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const groupRef = useRef<THREE.Group>(null);
   const nodesRef = useRef<THREE.Group>(null);
+  const magneticGridRef = useRef<THREE.Group>(null);
   
   const smoothProgressRef = useRef(0);
   const velocityRef = useRef(0);
@@ -322,6 +357,16 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
     [-2, 2, -7], [2, 2, -5], [-3, -1, -9]
   ] as [number, number, number][];
 
+  // Magnetic backing grid elements (25 coordinate plus marks)
+  const gridPositions = useRef(
+    Array.from({ length: 25 }).map((_, i) => {
+      const row = Math.floor(i / 5) - 2;
+      const col = (i % 5) - 2;
+      return new THREE.Vector3(col * 1.5, row * 1.5, -9);
+    })
+  );
+
+  const compassRefs = useRef<THREE.Group[]>([]);
   const offsetsRef = useRef<THREE.Vector3[]>(initialPoints.map(p => new THREE.Vector3(...p)));
 
   useFrame(() => {
@@ -373,6 +418,21 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
       const homeDir = new THREE.Vector3(...orig).sub(nodePos);
       nodePos.addScaledVector(homeDir, 0.05);
     });
+
+    // Magnetic backing needle grid rotation to face pointer coordinates
+    gridPositions.current.forEach((pos, idx) => {
+      const compassGroup = compassRefs.current[idx];
+      if (compassGroup) {
+        // Calculate angle from plus mark to pointer
+        const pointerPos = new THREE.Vector3(pointer.x * 3, pointer.y * 3, -9);
+        const dx = pointerPos.x - pos.x;
+        const dy = pointerPos.y - pos.y;
+        const angle = Math.atan2(dy, dx);
+        
+        // Smoothly rotate plus mark toward cursor
+        compassGroup.rotation.z = THREE.MathUtils.lerp(compassGroup.rotation.z, angle, 0.08);
+      }
+    });
   });
 
   const speedSplit = Math.min(0.35, scrollSpeedRef.current * 12);
@@ -405,6 +465,25 @@ function VectorNodeFlight({ scrollProgressRef, scrollSpeedRef, theme }: ScenePro
 
   return (
     <group ref={groupRef} position={[0, 0, -5]} scale={[scale, scale, scale]}>
+      {/* Magnetic Backing Field Plus Mark Grid (Option 3 Upgrade) */}
+      {opacity > 0 && (
+        <group ref={magneticGridRef}>
+          {gridPositions.current.map((pos, idx) => (
+            <group
+              key={`grid-needle-${idx}`}
+              position={[pos.x, pos.y, pos.z]}
+              ref={(el) => {
+                if (el) compassRefs.current[idx] = el;
+              }}
+            >
+              {/* Draw a calibration '+' mark */}
+              <Line points={[[-0.15, 0, 0], [0.15, 0, 0]]} color={lineColor} lineWidth={1.2} transparent opacity={opacity * 0.25} />
+              <Line points={[[0, -0.15, 0], [0, 0.15, 0]]} color={lineColor} lineWidth={1.2} transparent opacity={opacity * 0.25} />
+            </group>
+          ))}
+        </group>
+      )}
+
       {/* Grid Anchor Lines with Speed-based CMYK splits (Option 1) */}
       <group ref={nodesRef}>
         {speedSplit > 0.005 ? (
