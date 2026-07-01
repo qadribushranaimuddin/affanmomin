@@ -50,6 +50,66 @@ export default function PrepressStudio() {
   const [showGrid, setShowGrid] = useState<boolean>(false);
   const [showWindSlits, setShowWindSlits] = useState<boolean>(false);
   const [finishingMargin, setFinishingMargin] = useState<'hem' | 'pole-tb' | 'pole-lr' | 'none'>('none');
+  const [bgColorHex, setBgColorHex] = useState<string>('#FF3E00');
+
+  const checkOutOfGamut = (hex: string) => {
+    if (!hex.startsWith('#') || hex.length !== 7) return false;
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+
+    const rPct = r / 255;
+    const gPct = g / 255;
+    const bPct = b / 255;
+
+    const k = 1 - Math.max(rPct, gPct, bPct);
+    if (k === 1) return false;
+
+    const c = (1 - rPct - k) / (1 - k);
+    const m = (1 - gPct - k) / (1 - k);
+    const y = (1 - bPct - k) / (1 - k);
+
+    const r2 = Math.round(255 * (1 - c) * (1 - k));
+    const g2 = Math.round(255 * (1 - m) * (1 - k));
+    const b2 = Math.round(255 * (1 - y) * (1 - k));
+
+    const diffR = Math.abs(r - r2);
+    const diffG = Math.abs(g - g2);
+    const diffB = Math.abs(b - b2);
+
+    return Math.max(diffR, diffG, diffB) > 25;
+  };
+
+  const getSafeGamutColor = (hex: string) => {
+    if (!hex.startsWith('#') || hex.length !== 7) return '#FF3E00';
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+
+    const rPct = r / 255;
+    const gPct = g / 255;
+    const bPct = b / 255;
+
+    const k = 1 - Math.max(rPct, gPct, bPct);
+    if (k === 1) return '#000000';
+
+    const c = (1 - rPct - k) / (1 - k);
+    const m = (1 - gPct - k) / (1 - k);
+    const y = (1 - bPct - k) / (1 - k);
+
+    const r2 = Math.max(0, Math.min(255, Math.round(255 * (1 - c) * (1 - k))));
+    const g2 = Math.max(0, Math.min(255, Math.round(255 * (1 - m) * (1 - k))));
+    const b2 = Math.max(0, Math.min(255, Math.round(255 * (1 - y) * (1 - k))));
+
+    const toHexStr = (val: number) => {
+      const h = val.toString(16);
+      return h.length === 1 ? '0' + h : h;
+    };
+
+    return `#${toHexStr(r2)}${toHexStr(g2)}${toHexStr(b2)}`;
+  };
+
+  const isOutOfGamut = checkOutOfGamut(bgColorHex);
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const [resolutionDpi, setResolutionDpi] = useState<number>(300); // 72, 150, 300, 600
@@ -67,17 +127,31 @@ export default function PrepressStudio() {
     black: true
   });
 
-  const getCmykColor = (c: number, m: number, y: number, k: number) => {
+  const getCmykColor = (hexColor: string) => {
+    const hex = hexColor.startsWith('#') ? hexColor : '#FF3E00';
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+
+    const rPct = r / 255;
+    const gPct = g / 255;
+    const bPct = b / 255;
+
+    const k = 1 - Math.max(rPct, gPct, bPct);
+    const c = k === 1 ? 0 : (1 - rPct - k) / (1 - k);
+    const m = k === 1 ? 0 : (1 - gPct - k) / (1 - k);
+    const y = k === 1 ? 0 : (1 - bPct - k) / (1 - k);
+
     const activeC = cmykChannels.cyan ? c : 0;
     const activeM = cmykChannels.magenta ? m : 0;
     const activeY = cmykChannels.yellow ? y : 0;
     const activeK = cmykChannels.black ? k : 0;
 
-    const r = Math.round(255 * (1 - activeC) * (1 - activeK));
-    const g = Math.round(255 * (1 - activeM) * (1 - activeK));
-    const b = Math.round(255 * (1 - activeY) * (1 - activeK));
+    const rOut = Math.round(255 * (1 - activeC) * (1 - activeK));
+    const gOut = Math.round(255 * (1 - activeM) * (1 - activeK));
+    const bOut = Math.round(255 * (1 - activeY) * (1 - activeK));
 
-    return `rgb(${r}, ${g}, ${b})`;
+    return `rgb(${rOut}, ${gOut}, ${bOut})`;
   };
 
   useEffect(() => {
@@ -417,6 +491,88 @@ export default function PrepressStudio() {
                 </div>
               </div>
 
+              {/* Color Customizer and Gamut Check Deck */}
+              <div className="bg-[#151515] border border-[#222] p-3 rounded space-y-3 mt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-mono text-[#FF3E00] uppercase tracking-wider block font-bold">
+                    // Color Gamut Calibration
+                  </span>
+                  {isOutOfGamut && (
+                    <span className="text-[7.5px] bg-[#FF3E00]/15 border border-[#FF3E00]/40 text-[#FF3E00] px-1 font-mono uppercase font-bold animate-pulse">
+                      OUT OF GAMUT
+                    </span>
+                  )}
+                </div>
+
+                {/* Color input */}
+                <div className="space-y-1">
+                  <div className="flex justify-between font-mono text-[8px] text-[#8c8c8c]">
+                    <span>BANNER BACKGROUND HEX:</span>
+                    <span className="text-white">{bgColorHex.toUpperCase()}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={bgColorHex}
+                      onChange={(e) => setBgColorHex(e.target.value)}
+                      className="w-8 h-6 bg-black border border-white/10 rounded cursor-pointer p-0"
+                    />
+                    <input
+                      type="text"
+                      value={bgColorHex}
+                      onChange={(e) => setBgColorHex(e.target.value)}
+                      className="flex-1 bg-black border border-white/10 rounded px-2 text-[9px] font-mono text-white focus:outline-none focus:border-[#FF3E00]"
+                      placeholder="#FF3E00"
+                    />
+                  </div>
+                </div>
+
+                {/* Color presets */}
+                <div className="space-y-1">
+                  <span className="block font-mono text-[7px] text-[#555] uppercase">Gamut Test Presets:</span>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[
+                      { hex: '#00FF00', name: 'Neon Green' },
+                      { hex: '#FF00FF', name: 'Neon Pink' },
+                      { hex: '#00FFFF', name: 'Neon Cyan' },
+                      { hex: '#FF3E00', name: 'Safe Red' },
+                      { hex: '#1E3A8A', name: 'Safe Navy' },
+                      { hex: '#10B981', name: 'Safe Emerald' }
+                    ].map(preset => (
+                      <button
+                        key={preset.hex}
+                        onClick={() => setBgColorHex(preset.hex)}
+                        className={`px-1.5 py-0.5 rounded-[1px] font-mono text-[7.5px] border cursor-pointer ${
+                          bgColorHex === preset.hex ? 'border-[#FF3E00] text-[#FF3E00]' : 'border-white/5 text-gray-500 hover:text-white'
+                        }`}
+                        title={preset.name}
+                      >
+                        {preset.name.split(' ')[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Out of Gamut Warning alert & shifter */}
+                {isOutOfGamut && (
+                  <div className="bg-[#FF3E00]/10 border border-[#FF3E00]/30 p-2.5 rounded-sm flex flex-col gap-1.5 animate-fadeIn">
+                    <div className="flex items-center gap-1.5 text-[#FF3E00] font-mono text-[8px] font-bold">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>RGB COLOR OUT OF PRINT GAMUT</span>
+                    </div>
+                    <p className="text-[7.5px] text-gray-400 font-mono leading-normal">
+                      Selected neon colors cannot be reproduced in CMYK subtractive ink space.
+                    </p>
+                    <button
+                      onClick={() => setBgColorHex(getSafeGamutColor(bgColorHex))}
+                      className="w-full bg-[#FF3E00] hover:bg-[#E03700] text-black hover:text-white py-1 px-2 rounded-sm font-mono text-[8px] font-extrabold uppercase transition-colors cursor-pointer"
+                    >
+                      ✦ Auto-Gamut Calibrated Shift
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* CMYK Separator channels */}
               {isCMYK && (
                 <div className="bg-[#151515] border border-[#222] p-3 rounded space-y-2 mt-2">
@@ -609,7 +765,7 @@ export default function PrepressStudio() {
               animate={{ 
                 width: layoutW, 
                 height: layoutH,
-                backgroundColor: isCMYK ? getCmykColor(0, 0.75, 1.0, 0) : '#FF3E00'
+                backgroundColor: isCMYK ? getCmykColor(bgColorHex) : bgColorHex
               }}
               transition={{ type: 'spring', stiffness: 100, damping: 16 }}
               className="relative shadow-2xl rounded border border-white/10 overflow-hidden flex flex-col justify-between p-6 select-none"
