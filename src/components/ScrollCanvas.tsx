@@ -22,7 +22,7 @@ function OrigamiBox({ scrollProgressRef, theme }: SceneProps) {
     smoothProgressRef.current = THREE.MathUtils.lerp(
       smoothProgressRef.current,
       scrollProgressRef.current,
-      0.08
+      0.038
     );
     const progress = smoothProgressRef.current;
 
@@ -104,7 +104,7 @@ function PressroomRollers({ scrollProgressRef, theme }: SceneProps) {
     smoothProgressRef.current = THREE.MathUtils.lerp(
       smoothProgressRef.current,
       scrollProgressRef.current,
-      0.08
+      0.038
     );
     const progress = smoothProgressRef.current;
 
@@ -179,7 +179,7 @@ function VectorNodeFlight({ scrollProgressRef, theme }: SceneProps) {
     smoothProgressRef.current = THREE.MathUtils.lerp(
       smoothProgressRef.current,
       scrollProgressRef.current,
-      0.08
+      0.038
     );
     const progress = smoothProgressRef.current;
 
@@ -248,7 +248,7 @@ function CMYKRegistrationScene({ scrollProgressRef, theme }: SceneProps) {
     smoothProgressRef.current = THREE.MathUtils.lerp(
       smoothProgressRef.current,
       scrollProgressRef.current,
-      0.08
+      0.038
     );
     const progress = smoothProgressRef.current;
 
@@ -347,23 +347,7 @@ function CameraDirector({ scrollProgressRef }: { scrollProgressRef: React.Mutabl
 export default function ScrollCanvas({ theme }: { theme: "dark" | "light" }) {
   const scrollProgressRef = useRef<number>(0);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (docHeight > 0) {
-        scrollProgressRef.current = Math.max(0, Math.min(1, window.scrollY / docHeight));
-      }
-    };
-    
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Run initial trigger
-    handleScroll();
-    
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
+  // Update target scroll progress directly in the frame loop (bypasses event triggers)
   return (
     <div className="fixed inset-0 w-full h-full pointer-events-none z-0">
       <Canvas
@@ -371,6 +355,9 @@ export default function ScrollCanvas({ theme }: { theme: "dark" | "light" }) {
         dpr={[1, 1.5]}
         camera={{ position: [0, 0, 3.5], fov: 45 }}
       >
+        {/* Frame update hook to keep scroll ref synchronized at maximum monitor refresh rate */}
+        <FrameScrollTracker scrollProgressRef={scrollProgressRef} />
+
         {/* Adapt light intensity to theme */}
         <ambientLight intensity={theme === "dark" ? 0.2 : 0.6} />
         <directionalLight position={[5, 5, 5]} intensity={theme === "dark" ? 1.5 : 1.0} />
@@ -387,4 +374,15 @@ export default function ScrollCanvas({ theme }: { theme: "dark" | "light" }) {
       </Canvas>
     </div>
   );
+}
+
+// Separate helper component to perform frame-rate synced scroll reading
+function FrameScrollTracker({ scrollProgressRef }: { scrollProgressRef: React.MutableRefObject<number> }) {
+  useFrame(() => {
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    if (docHeight > 0) {
+      scrollProgressRef.current = Math.max(0, Math.min(1, window.scrollY / docHeight));
+    }
+  });
+  return null;
 }

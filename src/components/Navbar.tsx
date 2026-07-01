@@ -48,9 +48,18 @@ interface NavbarProps {
   onNavigate: (sectionId: string) => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  threeDActive: boolean;
+  onToggleThreeD: () => void;
 }
 
-export default function Navbar({ activeSection, onNavigate, theme, onToggleTheme }: NavbarProps) {
+export default function Navbar({ 
+  activeSection, 
+  onNavigate, 
+  theme, 
+  onToggleTheme,
+  threeDActive,
+  onToggleThreeD
+}: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showLogoImage, setShowLogoImage] = useState(false);
@@ -246,6 +255,16 @@ export default function Navbar({ activeSection, onNavigate, theme, onToggleTheme
             )}
           </button>
 
+          {/* 3D Mode Toggle Button */}
+          <button
+            onClick={onToggleThreeD}
+            className="flex items-center gap-1.5 cursor-pointer text-brand-text hover:text-[#FF3E00] transition-colors font-mono font-bold text-[9px] uppercase tracking-wider px-2.5 py-1.5 border border-card-border hover:border-[#FF3E00]/30 bg-card-bg/25 rounded-md h-max select-none shadow-sm ml-2"
+            title="Toggle 3D Immersive Background Animations"
+          >
+            <div className={`w-2 h-2 rounded-full shrink-0 ${threeDActive ? 'bg-[#FF3E00] animate-pulse' : 'bg-brand-muted/60'}`} />
+            <span className="leading-none text-[8px]">{threeDActive ? "3D: ON" : "3D: OFF"}</span>
+          </button>
+
           <a
             href="/My Resume.pdf"
             download="Momin_Affan_Resume.pdf"
@@ -343,6 +362,15 @@ export default function Navbar({ activeSection, onNavigate, theme, onToggleTheme
               >
                 <span>{theme === "dark" ? "Switch to Day Mode" : "Switch to Night Mode"}</span>
                 {theme === "dark" ? <Sun className="w-4 h-4 text-[#FF3E00]" /> : <Moon className="w-4 h-4 text-[#FF3E00]" />}
+              </button>
+
+              {/* Mobile 3D Toggle Button */}
+              <button
+                onClick={onToggleThreeD}
+                className="flex items-center justify-between bg-card-bg/25 backdrop-blur-md border border-card-border text-brand-text font-mono font-bold uppercase tracking-wider px-4 py-3 mt-2 text-center rounded-sm shadow-sm cursor-pointer"
+              >
+                <span>{threeDActive ? "Deactivate 3D Mode" : "Activate 3D Mode"}</span>
+                <div className={`w-2.5 h-2.5 rounded-full ${threeDActive ? 'bg-[#FF3E00] animate-pulse' : 'bg-brand-muted/60'}`} />
               </button>
 
               {/* Mobile Download Resume Button */}

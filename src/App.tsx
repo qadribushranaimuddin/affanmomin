@@ -217,7 +217,19 @@ export default function App() {
       // Ignore security errors in sandboxed iframes
     }
   }, [theme]);
+  const [threeDActive, setThreeDActive] = useState<boolean>(() => {
+    try {
+      return (localStorage.getItem("3d-active") !== "false");
+    } catch (e) {
+      return true;
+    }
+  });
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("3d-active", String(threeDActive));
+    } catch (e) {}
+  }, [threeDActive]);
   const [activeSection, setActiveSection] = useState<string>('hero');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
@@ -587,6 +599,8 @@ export default function App() {
         onNavigate={scrollToEl} 
         theme={theme}
         onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
+        threeDActive={threeDActive}
+        onToggleThreeD={() => setThreeDActive((prev) => !prev)}
       />
 
       {/* Main Structural Layout Container */}
