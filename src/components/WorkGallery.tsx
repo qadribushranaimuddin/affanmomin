@@ -167,7 +167,7 @@ export default function WorkGallery() {
           <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">
             // Image Board Matrix
           </span>
-          <h2 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">
             Real Design Print Archives
           </h2>
           

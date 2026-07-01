@@ -276,7 +276,7 @@ export default function PortfolioShowcase() {
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div className="relative w-full md:w-auto">
           <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">Showcase</span>
-          <h2 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">
             Proven Creative Deliveries
           </h2>
           

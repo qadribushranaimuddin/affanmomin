@@ -74,7 +74,7 @@ export default function InteractiveLab() {
         <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">
           // Interactive Studio Suite
         </span>
-        <h2 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
           Design Production Lab
         </h2>
         

@@ -155,7 +155,7 @@ export default function AboutSection() {
                     <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">
                       // Core Identity
                     </span>
-                    <h3 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
+                    <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
                       About<br />
                       Momin Affan
                     </h3>

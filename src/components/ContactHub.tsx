@@ -89,7 +89,7 @@ export default function ContactHub() {
     <div className="py-6" id="contact-section">
       <div className="mb-8">
         <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">Let's Work Together</span>
-        <h2 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">
           Initiate Design Brief
         </h2>
         

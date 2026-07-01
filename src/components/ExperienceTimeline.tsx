@@ -98,7 +98,7 @@ export default function ExperienceTimeline() {
     <div className="py-6 border-b border-[#222]" id="experience-section">
       <div className="mb-8">
         <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold block mb-1">Timeline</span>
-        <h2 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tighter uppercase leading-none">
           Professional History
         </h2>
         
