@@ -13,6 +13,7 @@ export default function PressroomSimulator() {
   const [magentaAngle, setMagentaAngle] = useState<number>(75);
   const [yellowAngle, setYellowAngle] = useState<number>(0);
   const [blackAngle, setBlackAngle] = useState<number>(45);
+  const [lpi, setLpi] = useState<85 | 133 | 175>(133);
 
   const getHasMoire = () => {
     const diffCM = Math.abs(cyanAngle - magentaAngle) % 90;
@@ -76,6 +77,10 @@ export default function PressroomSimulator() {
     setYellowKey(75);
     setKeyBlackKey(30);
   };
+
+  const patternSize = lpi === 85 ? 20 : lpi === 133 ? 12 : 6;
+  const patternCenter = patternSize / 2;
+  const radiusMultiplier = lpi === 85 ? 7.5 : lpi === 133 ? 4.5 : 2.25;
 
   return (
     <div className="w-full text-left relative">
@@ -442,25 +447,43 @@ export default function PressroomSimulator() {
               </div>
             </div>
 
-            {/* Halftone Microscope inspect card */}
             <div className="w-full max-w-sm h-36 border border-white/5 bg-[#161616] rounded-lg overflow-hidden flex flex-col justify-center items-center select-none relative group cursor-zoom-in">
               <span className="absolute top-2 left-2 font-mono text-[8px] text-[#A3A3A3] uppercase z-10 font-bold bg-black/60 px-1.5 py-0.5">// 400x Halftone Microscope Rosette</span>
+              
+              <div className="absolute top-2 right-2 flex gap-1 z-10 select-none">
+                {([85, 133, 175] as const).map((item) => (
+                  <button
+                    key={item}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLpi(item);
+                    }}
+                    className={`px-1.5 py-0.5 rounded-[1px] font-mono text-[7px] border cursor-pointer transition-colors ${
+                      lpi === item 
+                        ? 'bg-[#FF3E00] border-[#FF3E00] text-black font-black' 
+                        : 'bg-black/60 border-white/10 text-[#A3A3A3] hover:text-white'
+                    }`}
+                  >
+                    {item} LPI
+                  </button>
+                ))}
+              </div>
               
               {/* Halftone background */}
               <div className="w-full h-full flex items-center justify-center relative bg-white">
                 <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
                   <defs>
-                    <pattern id="cyan-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform={`rotate(${cyanAngle})`}>
-                      <circle cx="6" cy="6" r={Math.max(0.5, (cyanKey / 100) * 4.5)} fill="#00FFFF" opacity="0.8" />
+                    <pattern id="cyan-dots" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse" patternTransform={`rotate(${cyanAngle})`}>
+                      <circle cx={patternCenter} cy={patternCenter} r={Math.max(0.5, (cyanKey / 100) * radiusMultiplier)} fill="#00FFFF" opacity="0.8" />
                     </pattern>
-                    <pattern id="magenta-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform={`rotate(${magentaAngle})`}>
-                      <circle cx="6" cy="6" r={Math.max(0.5, (magentaKey / 100) * 4.5)} fill="#FF00FF" opacity="0.8" />
+                    <pattern id="magenta-dots" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse" patternTransform={`rotate(${magentaAngle})`}>
+                      <circle cx={patternCenter} cy={patternCenter} r={Math.max(0.5, (magentaKey / 100) * radiusMultiplier)} fill="#FF00FF" opacity="0.8" />
                     </pattern>
-                    <pattern id="yellow-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform={`rotate(${yellowAngle})`}>
-                      <circle cx="6" cy="6" r={Math.max(0.5, (yellowKey / 100) * 4.5)} fill="#FFFF00" opacity="0.8" />
+                    <pattern id="yellow-dots" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse" patternTransform={`rotate(${yellowAngle})`}>
+                      <circle cx={patternCenter} cy={patternCenter} r={Math.max(0.5, (yellowKey / 100) * radiusMultiplier)} fill="#FFFF00" opacity="0.8" />
                     </pattern>
-                    <pattern id="black-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform={`rotate(${blackAngle})`}>
-                      <circle cx="6" cy="6" r={Math.max(0.5, (keyBlackKey / 100) * 4.5)} fill="#111111" opacity="0.85" />
+                    <pattern id="black-dots" x="0" y="0" width={patternSize} height={patternSize} patternUnits="userSpaceOnUse" patternTransform={`rotate(${blackAngle})`}>
+                      <circle cx={patternCenter} cy={patternCenter} r={Math.max(0.5, (keyBlackKey / 100) * radiusMultiplier)} fill="#111111" opacity="0.85" />
                     </pattern>
                   </defs>
                   <rect width="100%" height="100%" fill="url(#yellow-dots)" />
