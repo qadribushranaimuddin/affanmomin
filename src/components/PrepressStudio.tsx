@@ -58,6 +58,25 @@ export default function PrepressStudio() {
 
   const [droplets, setDroplets] = useState<{ id: number; x: number; y: number; color: string }[]>([]);
   const [sweepKey, setSweepKey] = useState<number>(0);
+  const [cmykChannels, setCmykChannels] = useState({
+    cyan: true,
+    magenta: true,
+    yellow: true,
+    black: true
+  });
+
+  const getCmykColor = (c: number, m: number, y: number, k: number) => {
+    const activeC = cmykChannels.cyan ? c : 0;
+    const activeM = cmykChannels.magenta ? m : 0;
+    const activeY = cmykChannels.yellow ? y : 0;
+    const activeK = cmykChannels.black ? k : 0;
+
+    const r = Math.round(255 * (1 - activeC) * (1 - activeK));
+    const g = Math.round(255 * (1 - activeM) * (1 - activeK));
+    const b = Math.round(255 * (1 - activeY) * (1 - activeK));
+
+    return `rgb(${r}, ${g}, ${b})`;
+  };
 
   useEffect(() => {
     setSweepKey(prev => prev + 1);
@@ -129,41 +148,85 @@ export default function PrepressStudio() {
     layoutW = maxH * aspectFraction;
   }
 
-  // Generate eyelet/grommet dots along the outer boundary dynamically based on grommetInterval
-  const getGrommetsList = () => {
-    const list: { top: string; left: string }[] = [];
-    if (!showGrommets) return list;
-    
-    // Corners
-    list.push({ top: '4%', left: '4%' });
-    list.push({ top: '4%', left: '96%' });
-    list.push({ top: '96%', left: '4%' });
-    list.push({ top: '96%', left: '96%' });
+
+  const [customGrommets, setCustomGrommets] = useState<{ id: string; x: number; y: number }[]>([]);
+
+  useEffect(() => {
+    const list: { id: string; x: number; y: number }[] = [];
+    // corners
+    list.push({ id: 'c1', x: 4, y: 4 });
+    list.push({ id: 'c2', x: 96, y: 4 });
+    list.push({ id: 'c3', x: 4, y: 96 });
+    list.push({ id: 'c4', x: 96, y: 96 });
 
     const totalWidth = activePreset.wFeet;
     const totalHeight = activePreset.hFeet;
 
-    // top & bottom row grommets
+    // top & bottom
     const wSegments = Math.floor(totalWidth / grommetInterval);
     if (wSegments > 1) {
       for (let i = 1; i < wSegments; i++) {
-        const pct = (i / wSegments) * 92 + 4; // stay between 4% and 96%
-        list.push({ top: '4%', left: `${pct}%` });
-        list.push({ top: '96%', left: `${pct}%` });
+        const pct = (i / wSegments) * 92 + 4;
+        list.push({ id: `tb-${i}-t`, x: pct, y: 4 });
+        list.push({ id: `tb-${i}-b`, x: pct, y: 96 });
       }
     }
 
-    // left & right column grommets
+    // left & right
     const hSegments = Math.floor(totalHeight / grommetInterval);
     if (hSegments > 1) {
       for (let i = 1; i < hSegments; i++) {
         const pct = (i / hSegments) * 92 + 4;
-        list.push({ top: `${pct}%`, left: '4%' });
-        list.push({ top: `${pct}%`, left: '96%' });
+        list.push({ id: `lr-${i}-l`, x: 4, y: pct });
+        list.push({ id: `lr-${i}-r`, x: 96, y: pct });
       }
     }
+    setCustomGrommets(list);
+  }, [activePreset, grommetInterval]);
 
-    return list;
+  const handleBannerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!showGrommets) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = ((e.clientX - rect.left) / rect.width) * 100;
+    const clickY = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const isNearEdge = clickX < 12 || clickX > 88 || clickY < 12 || clickY > 88;
+    if (isNearEdge) {
+      const threshold = 6;
+      const nearbyIdx = customGrommets.findIndex(g => 
+        Math.abs(g.x - clickX) < threshold && Math.abs(g.y - clickY) < threshold
+      );
+
+      if (nearbyIdx !== -1) {
+        setCustomGrommets(prev => prev.filter((_, idx) => idx !== nearbyIdx));
+      } else {
+        let snapX = clickX;
+        let snapY = clickY;
+
+        const distLeft = clickX;
+        const distRight = 100 - clickX;
+        const distTop = clickY;
+        const distBottom = 100 - clickY;
+
+        const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+        if (minDist === distLeft) {
+          snapX = 4;
+        } else if (minDist === distRight) {
+          snapX = 96;
+        } else if (minDist === distTop) {
+          snapY = 4;
+        } else {
+          snapY = 96;
+        }
+
+        setCustomGrommets(prev => [...prev, {
+          id: `custom-grommet-${Date.now()}`,
+          x: snapX,
+          y: snapY
+        }]);
+      }
+    }
   };
 
   const handlePresetSelect = (preset: PrepressPreset) => {
@@ -304,6 +367,82 @@ export default function PrepressStudio() {
                   <span>3.0 ft (SPARSE)</span>
                 </div>
               </div>
+
+              {/* CMYK Separator channels */}
+              {isCMYK && (
+                <div className="bg-[#151515] border border-[#222] p-3 rounded space-y-2 mt-2">
+                  <span className="text-[9px] font-mono text-[#FF3E00] uppercase tracking-wider block">
+                    // CMYK Press Plate Channel Separations
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setCmykChannels(prev => ({ ...prev, cyan: !prev.cyan }))}
+                      className={`py-1.5 rounded text-[8px] font-mono uppercase tracking-wider cursor-pointer border transition-colors ${
+                        cmykChannels.cyan 
+                          ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/40 font-bold" 
+                          : "bg-black/40 text-gray-600 border-white/5"
+                      }`}
+                    >
+                      Cyan Plate: {cmykChannels.cyan ? "ON" : "OFF"}
+                    </button>
+                    <button
+                      onClick={() => setCmykChannels(prev => ({ ...prev, magenta: !prev.magenta }))}
+                      className={`py-1.5 rounded text-[8px] font-mono uppercase tracking-wider cursor-pointer border transition-colors ${
+                        cmykChannels.magenta 
+                          ? "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/40 font-bold" 
+                          : "bg-black/40 text-gray-600 border-white/5"
+                      }`}
+                    >
+                      Magenta Plate: {cmykChannels.magenta ? "ON" : "OFF"}
+                    </button>
+                    <button
+                      onClick={() => setCmykChannels(prev => ({ ...prev, yellow: !prev.yellow }))}
+                      className={`py-1.5 rounded text-[8px] font-mono uppercase tracking-wider cursor-pointer border transition-colors ${
+                        cmykChannels.yellow 
+                          ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/40 font-bold" 
+                          : "bg-black/40 text-gray-600 border-white/5"
+                      }`}
+                    >
+                      Yellow Plate: {cmykChannels.yellow ? "ON" : "OFF"}
+                    </button>
+                    <button
+                      onClick={() => setCmykChannels(prev => ({ ...prev, black: !prev.black }))}
+                      className={`py-1.5 rounded text-[8px] font-mono uppercase tracking-wider cursor-pointer border transition-colors ${
+                        cmykChannels.black 
+                          ? "bg-gray-500/20 text-gray-300 border-gray-500/40 font-bold" 
+                          : "bg-black/40 text-gray-600 border-white/5"
+                      }`}
+                    >
+                      Key (Black) Plate: {cmykChannels.black ? "ON" : "OFF"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Resolution & Physical Spec Calculator panel */}
+              <div className="bg-[#151515] border border-[#222] p-3 rounded space-y-1.5 text-[9px] font-mono text-[#8c8c8c] mt-2">
+                <span className="text-[#FF3E00] uppercase tracking-wider block font-bold">
+                  // Physical Resolution specs calculator
+                </span>
+                <div className="flex justify-between">
+                  <span>Target Dimensions:</span>
+                  <span className="text-white">{(activePreset.wFeet * 12).toFixed(0)}" × {(activePreset.hFeet * 12).toFixed(0)}" Inches</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Output Pixels:</span>
+                  <span className="text-white">{(activePreset.wFeet * 12 * resolutionDpi).toLocaleString()} × {(activePreset.hFeet * 12 * resolutionDpi).toLocaleString()} px</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Print Quality Check:</span>
+                  {resolutionDpi >= 300 ? (
+                    <span className="text-[#00ff99] font-bold">✓ High Resolution Approved</span>
+                  ) : resolutionDpi === 150 ? (
+                    <span className="text-yellow-400 font-bold">⚠️ Proof Grade Only</span>
+                  ) : (
+                    <span className="text-[#FF3E00] font-bold">❌ Resolution Too Low for Press</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -362,6 +501,7 @@ export default function PrepressStudio() {
               }
             }}
             onMouseDown={spawnDroplet}
+            onClick={handleBannerClick}
             onMouseLeave={handleMouseLeave}
             style={{ perspective: '1000px' }}
             className="flex-1 flex items-center justify-center py-10 bg-black/40 border border-[#222] rounded relative min-h-[300px] overflow-hidden cursor-crosshair"
@@ -420,7 +560,7 @@ export default function PrepressStudio() {
               animate={{ 
                 width: layoutW, 
                 height: layoutH,
-                backgroundColor: isCMYK ? '#A32924' : '#FF3E00'
+                backgroundColor: isCMYK ? getCmykColor(0, 0.75, 1.0, 0) : '#FF3E00'
               }}
               transition={{ type: 'spring', stiffness: 100, damping: 16 }}
               className="relative shadow-2xl rounded border border-white/10 overflow-hidden flex flex-col justify-between p-6 select-none"
@@ -465,16 +605,16 @@ export default function PrepressStudio() {
 
               {/* Metal Grommet Eyelets Punch Simulator */}
               <AnimatePresence>
-                {showGrommets && getGrommetsList().map((g, i) => (
+                {showGrommets && customGrommets.map((g, i) => (
                   <motion.div
-                    key={`grommet-${i}`}
+                    key={g.id}
                     initial={{ scale: 0, rotate: -45 }}
                     animate={{ scale: 1, rotate: 0 }}
                     exit={{ scale: 0 }}
                     whileHover={{ scale: 1.4 }}
-                    transition={{ type: "spring", stiffness: 180, damping: 10, delay: i * 0.04 }}
-                    className="absolute w-3 h-3 rounded-full bg-[#1A1A1A] border-2 border-amber-400/80 shadow-inner z-20 flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-crosshair"
-                    style={{ top: g.top, left: g.left }}
+                    transition={{ type: "spring", stiffness: 180, damping: 10, delay: i * 0.02 }}
+                    className="absolute w-3.5 h-3.5 rounded-full bg-[#1A1A1A] border-2 border-amber-400/80 shadow-inner z-25 flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:border-white transition-colors"
+                    style={{ top: `${g.y}%`, left: `${g.x}%` }}
                   >
                     <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
                   </motion.div>
