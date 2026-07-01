@@ -282,13 +282,12 @@ export default function ScrollCanvas() {
   }, []);
 
   return (
-    <div className="fixed inset-0 w-full h-full pointer-events-none -z-20 bg-black">
+    <div className="fixed inset-0 w-full h-full pointer-events-none z-0">
       <Canvas
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: true }}
         dpr={[1, 1.5]}
         camera={{ position: [0, 0, 3.5], fov: 45 }}
       >
-        <color attach="background" args={["#030303"]} />
         
         {/* Lights */}
         <ambientLight intensity={0.2} />
