@@ -35,7 +35,7 @@ function Gear({ position, size, speed, color }: { position: [number, number, num
   );
 }
 
-function CRTTextStream({ position, color }: { position: [number, number, number]; color: string }) {
+function CRTTextStream({ position, color, theme }: { position: [number, number, number]; color: string; theme: "dark" | "light" }) {
   const textRef = useRef<THREE.Group>(null);
   const [content, setContent] = React.useState("01101\n10110\n00101");
   
@@ -56,9 +56,11 @@ function CRTTextStream({ position, color }: { position: [number, number, number]
     }
   });
 
+  const textOpacity = theme === "dark" ? 0.15 : 0.38;
+
   return (
     <group ref={textRef} position={position}>
-      <Text fontSize={0.055} color={color} anchorX="left" anchorY="top" transparent opacity={0.15}>
+      <Text fontSize={0.055} color={color} anchorX="left" anchorY="top" transparent opacity={textOpacity}>
         {content}
       </Text>
     </group>
@@ -627,8 +629,8 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
   });
 
   const progress = smoothProgressRef.current;
-  const strokeColor = theme === "dark" ? "#00ff66" : "#059669";
-  const labelColor = theme === "dark" ? "#888888" : "#444444";
+  const strokeColor = theme === "dark" ? "#00ff66" : "#00e65c";
+  const labelColor = theme === "dark" ? "#888888" : "#8ab39c";
   
   // CRT Screen flickering value
   const flicker = useMemo(() => Math.sin(Math.random() * Math.PI) * 0.03 + 0.97, []);
@@ -655,7 +657,7 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
       {/* 1. Main 3D Monitor Casing (Cathode Ray Tube back box) */}
       <mesh position={[0, 0, -0.6]}>
         <boxGeometry args={[4.5, 3.0, 1.2]} />
-        <meshStandardMaterial color={theme === "dark" ? "#141414" : "#e5e7eb"} roughness={0.85} metalness={0.1} />
+        <meshStandardMaterial color={theme === "dark" ? "#141414" : "#cbbfab"} roughness={0.85} metalness={0.1} />
       </mesh>
 
       {/* 2. Ventilation Grill Slots on top of the chassis */}
@@ -669,14 +671,14 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
       {/* 3. Screen Bezel Face Plate Frame */}
       <mesh position={[0, 0, 0.025]}>
         <boxGeometry args={[4.9, 3.4, 0.15]} />
-        <meshStandardMaterial color={theme === "dark" ? "#1d1d1f" : "#d1d5db"} roughness={0.7} metalness={0.25} />
+        <meshStandardMaterial color={theme === "dark" ? "#1d1d1f" : "#dfd5c6"} roughness={0.7} metalness={0.25} />
       </mesh>
 
       {/* 4. Translucent 3D Curved Glass Dome Screen */}
       <mesh position={[0, 0, 0.08]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[2.1, 2.1, 0.15, 32, 1, false, 0, Math.PI]} />
         <meshPhysicalMaterial 
-          color={theme === "dark" ? "#062f1a" : "#ecfdf5"} 
+          color={theme === "dark" ? "#062f1a" : "#0a2c18"} 
           roughness={0.1} 
           metalness={0.2} 
           transmission={0.4} 
@@ -687,12 +689,12 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
       </mesh>
 
       {/* Console frame grid backing border */}
-      <Line points={[[-2.45, -1.7, 0.1], [2.45, -1.7, 0.1], [2.45, 1.7, 0.1], [-2.45, 1.7, 0.1], [-2.45, -1.7, 0.1]]} color={theme === "dark" ? "#333" : "#ccc"} lineWidth={1.5} />
+      <Line points={[[-2.45, -1.7, 0.1], [2.45, -1.7, 0.1], [2.45, 1.7, 0.1], [-2.45, 1.7, 0.1], [-2.45, -1.7, 0.1]]} color={theme === "dark" ? "#333" : "#555"} lineWidth={1.5} />
       
       {/* Motherboard circuit pathway traces & glowing microchip */}
       <group position={[0, 0, -0.05]}>
-        <Line points={[[-2.2, -1.3, 0.11], [-1.0, -1.3, 0.11], [-0.5, -0.8, 0.11], [0.5, -0.8, 0.11], [1.0, -1.3, 0.11], [2.2, -1.3, 0.11]]} color={theme === "dark" ? "#113322" : "#ccffdd"} lineWidth={1} transparent opacity={0.6} />
-        <Line points={[[-1.5, 0.8, 0.11], [-0.8, 0.2, 0.11], [0.8, 0.2, 0.11], [1.5, 0.8, 0.11]]} color={theme === "dark" ? "#113322" : "#ccffdd"} lineWidth={1} transparent opacity={0.6} />
+        <Line points={[[-2.2, -1.3, 0.11], [-1.0, -1.3, 0.11], [-0.5, -0.8, 0.11], [0.5, -0.8, 0.11], [1.0, -1.3, 0.11], [2.2, -1.3, 0.11]]} color={theme === "dark" ? "#113322" : "#a8e0c0"} lineWidth={1} transparent opacity={0.6} />
+        <Line points={[[-1.5, 0.8, 0.11], [-0.8, 0.2, 0.11], [0.8, 0.2, 0.11], [1.5, 0.8, 0.11]]} color={theme === "dark" ? "#113322" : "#a8e0c0"} lineWidth={1} transparent opacity={0.6} />
         <mesh position={[0, -0.8, 0.12]}>
           <boxGeometry args={[0.3, 0.18, 0.05]} />
           <meshBasicMaterial color="#FF3E00" />
@@ -700,10 +702,10 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
       </group>
 
       {/* Falling binary matrix background streams */}
-      <CRTTextStream position={[-1.7, 0.7, 0.12]} color={strokeColor} />
-      <CRTTextStream position={[-0.9, 0.5, 0.12]} color={strokeColor} />
-      <CRTTextStream position={[0.7, 0.8, 0.12]} color={strokeColor} />
-      <CRTTextStream position={[1.5, 0.6, 0.12]} color={strokeColor} />
+      <CRTTextStream position={[-1.7, 0.7, 0.12]} color={strokeColor} theme={theme} />
+      <CRTTextStream position={[-0.9, 0.5, 0.12]} color={strokeColor} theme={theme} />
+      <CRTTextStream position={[0.7, 0.8, 0.12]} color={strokeColor} theme={theme} />
+      <CRTTextStream position={[1.5, 0.6, 0.12]} color={strokeColor} theme={theme} />
 
       {/* Rotating industrial system gears on Bezel ears */}
       <Gear position={[-2.2, 1.4, 0.11]} size={0.15} speed={1.2} color={strokeColor} />
