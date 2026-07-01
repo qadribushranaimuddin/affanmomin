@@ -384,6 +384,14 @@ export default function PackagingFoldSimulator() {
       };
     }
 
+    const getCreaseBorderColor = (defaultColor: string) => {
+      if (!showStressHeatmap) return defaultColor;
+      const stressRatio = foldProgress * (caliperVal / 0.45);
+      if (stressRatio > 1.0) return "rgba(239, 68, 68, 0.95)"; // Solid Red
+      if (stressRatio > 0.6) return "rgba(245, 158, 11, 0.9)"; // Orange/Yellow
+      return "rgba(16, 185, 129, 0.85)"; // Green
+    };
+
     const baseStyleByStock = () => {
       switch (stock) {
         case "kraft":
@@ -391,7 +399,7 @@ export default function PackagingFoldSimulator() {
             backgroundColor: "rgba(180, 140, 100, 0.94)",
             backgroundImage: isMainFace ? getPatternBg() : "none",
             backgroundSize: isMainFace ? "24px 24px" : "auto",
-            borderColor: showCreaseLines ? "rgba(120, 80, 40, 0.75)" : "transparent",
+            borderColor: showCreaseLines ? getCreaseBorderColor("rgba(120, 80, 40, 0.75)") : "transparent",
             borderStyle: "dashed" as const,
             borderWidth: borderWeight,
             color: "rgba(80, 40, 10, 0.95)",
@@ -403,7 +411,7 @@ export default function PackagingFoldSimulator() {
             backgroundColor: "rgba(18, 20, 22, 0.98)",
             backgroundImage: isMainFace ? getPatternBg() : "none",
             backgroundSize: isMainFace ? "24px 24px" : "auto",
-            borderColor: showCreaseLines ? "rgba(212, 175, 55, 0.65)" : "transparent",
+            borderColor: showCreaseLines ? getCreaseBorderColor("rgba(212, 175, 55, 0.65)") : "transparent",
             borderStyle: "dashed" as const,
             borderWidth: borderWeight,
             color: "rgba(230, 200, 120, 0.95)",
@@ -416,7 +424,7 @@ export default function PackagingFoldSimulator() {
               ? `${getPatternBg()}, linear-gradient(135deg, rgba(8, 145, 178, 0.68), rgba(192, 38, 211, 0.68), rgba(202, 138, 4, 0.68))`
               : `linear-gradient(135deg, rgba(8, 145, 178, 0.68), rgba(192, 38, 211, 0.68), rgba(202, 138, 4, 0.68))`,
             backgroundSize: isMainFace ? "24px 24px, auto" : "auto",
-            borderColor: showCreaseLines ? "rgba(255, 255, 255, 0.75)" : "transparent",
+            borderColor: showCreaseLines ? getCreaseBorderColor("rgba(255, 255, 255, 0.75)") : "transparent",
             borderStyle: "dashed text" as any,
             borderWidth: borderWeight,
             color: "rgba(255, 255, 255, 1)",
@@ -428,7 +436,7 @@ export default function PackagingFoldSimulator() {
             backgroundColor: "rgba(245, 245, 248, 0.96)",
             backgroundImage: isMainFace ? getPatternBg() : "none",
             backgroundSize: isMainFace ? "24px 24px" : "auto",
-            borderColor: showCreaseLines ? "rgba(100, 116, 139, 0.55)" : "transparent",
+            borderColor: showCreaseLines ? getCreaseBorderColor("rgba(100, 116, 139, 0.55)") : "transparent",
             borderStyle: "dashed" as const,
             borderWidth: borderWeight,
             color: "rgba(15, 23, 42, 0.9)",
