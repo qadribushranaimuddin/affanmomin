@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Sparkles, RefreshCw, Compass, Copy, Check } from "lucide-react";
+import { Sparkles, RefreshCw, Compass, Copy, Check, Grid, Layers, ShieldCheck } from "lucide-react";
+
+type MockupType = "card" | "letterhead" | "tag" | "acrylic";
 
 export default function InteractiveSandbox() {
   const [brandName, setBrandName] = useState("VIBE-LAB");
   const [vibe, setVibe] = useState<"Brutalist" | "Minimal" | "Herbal" | "Trophy">("Brutalist");
   const [colorScheme, setColorScheme] = useState<string>("#FF3E00");
   const [copied, setCopied] = useState(false);
+
+  const [selectedIcon, setSelectedIcon] = useState<"helix" | "compass" | "crest" | "shield" | "clover" | "trigrid">("helix");
+  const [showVectorGuides, setShowVectorGuides] = useState<boolean>(false);
+  const [activeMockupType, setActiveMockupType] = useState<MockupType>("card");
 
   const vibePresets = [
     { id: "Brutalist", label: "Brutalist Tech", desc: "Heavy uppercase layout, thick high-contrast grids, technical telemetry." },
@@ -21,6 +27,57 @@ export default function InteractiveSandbox() {
     { name: "Trophy Gold", hex: "#fbbf24" },
     { name: "Cyber Fuchsia", hex: "#ec4899" },
   ];
+
+  const renderIcon = (className: string = "w-6 h-6") => {
+    switch (selectedIcon) {
+      case "helix":
+        return (
+          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4.5 16.5c-1.5-1.25-2.5-3.5-2.5-6 0-4.5 4-8 8.5-8s8.5 3.5 8.5 8c0 2.5-1 4.75-2.5 6" />
+            <path d="M12 10a2.5 2.5 0 0 1 2.5 2.5c0 1.5-.75 2.5-2.5 3.5-1.75-1-2.5-2-2.5-3.5A2.5 2.5 0 0 1 12 10z" />
+            <path d="M8 14.5c2 1 4 1 6 0" />
+          </svg>
+        );
+      case "compass":
+        return (
+          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+          </svg>
+        );
+      case "crest":
+        return (
+          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <path d="M12 8v8" />
+            <path d="M9 12h6" />
+          </svg>
+        );
+      case "shield":
+        return (
+          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <circle cx="12" cy="11" r="3" />
+          </svg>
+        );
+      case "clover":
+        return (
+          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 12c-2-2-4-2-4 0s2 4 4 4 4-2 4-4-2-2-4 0z" />
+            <path d="M12 12c2-2 2-4 0-4s-4 2-4 4 2 4 4 4-2-2-4-0z" />
+            <path d="M12 12c2 2 4 2 4 0s-2-4-4-4-4 2-4 4 2 2 4-0z" />
+            <path d="M12 12c-2 2-2 4 0 4s4-2 4-4-2-4-4-4 2 2 4 0z" />
+          </svg>
+        );
+      case "trigrid":
+        return (
+          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="12 2 22 8.5 22 20 12 13.5 2 20 2 8.5 12 2" />
+            <line x1="12" y1="13.5" x2="12" y2="22" />
+          </svg>
+        );
+    }
+  };
 
   const handleCopySpec = () => {
     const spec = `Brand: ${brandName}\nStyle Preset: ${vibe}\nColor Accent: ${colorScheme}\nRendered via Momin Affan Designer Sandbox — 2026`;
@@ -73,7 +130,7 @@ export default function InteractiveSandbox() {
               <span>[06 // PRE-FLIGHT SANDBOX]</span>
               <span className="h-[1px] w-8 bg-[#FF3E00]/40"></span>
             </div>
-            <h3 className="text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
+            <h3 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tighter uppercase leading-none select-none">
               Brand Identity<br />
               Simulator
             </h3>
@@ -139,6 +196,64 @@ export default function InteractiveSandbox() {
                 ))}
               </div>
             </div>
+
+            {/* Logo Icon Select */}
+            <div className="mt-6">
+              <span className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
+                Select Identity Mark Icon
+              </span>
+              <div className="grid grid-cols-6 gap-2">
+                {(["helix", "compass", "crest", "shield", "clover", "trigrid"] as const).map((ic) => (
+                  <button
+                    key={ic}
+                    onClick={() => setSelectedIcon(ic)}
+                    className={`p-2 border rounded flex items-center justify-center cursor-pointer transition-all ${
+                      selectedIcon === ic
+                        ? "bg-[#FF3E00] text-black border-[#FF3E00] shadow-sm"
+                        : "bg-[#111]/30 border-white/5 text-[#737373] hover:text-white hover:border-[#FF3E00]/40"
+                    }`}
+                    title={`Icon: ${ic.toUpperCase()}`}
+                  >
+                    {renderIcon("w-4 h-4")}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Guides & Mockups Settings */}
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div>
+                <span className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
+                  Construction Guides
+                </span>
+                <button
+                  onClick={() => setShowVectorGuides(!showVectorGuides)}
+                  className={`w-full py-2 font-mono text-[9px] uppercase tracking-wider border rounded cursor-pointer transition-all ${
+                    showVectorGuides
+                      ? "bg-[#FF3E00]/10 border-[#FF3E00]/40 text-[#FF3E00]"
+                      : "bg-[#111]/30 border-white/5 text-[#737373] hover:text-white"
+                  }`}
+                >
+                  {showVectorGuides ? "Guides: ON" : "Guides: OFF"}
+                </button>
+              </div>
+
+              <div>
+                <span className="block text-[10px] font-mono uppercase tracking-wider text-white mb-2">
+                  Stationary Type
+                </span>
+                <select
+                  value={activeMockupType}
+                  onChange={(e) => setActiveMockupType(e.target.value as MockupType)}
+                  className="w-full bg-[#111]/30 border border-white/5 p-2 text-[9px] font-mono text-white focus:outline-none focus:border-[#FF3E00] uppercase rounded cursor-pointer"
+                >
+                  <option value="card">Business Card</option>
+                  <option value="letterhead">Corporate Letterhead</option>
+                  <option value="tag">Product Hangtag</option>
+                  <option value="acrylic">Acrylic Shield Plate</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div className="pt-6 border-t border-white/5 flex gap-3">
@@ -183,81 +298,202 @@ export default function InteractiveSandbox() {
           </div>
 
           {/* MAIN RENDER ACCORDING TO USER CONFIG */}
-          <div className="my-10 flex flex-col items-center justify-center">
+          {/* Guides helper */}
+          {(() => {
+            if (!showVectorGuides) return null;
+            return (
+              <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-[#FF007F]/30 border-t border-dashed border-[#FF007F]/20" />
+                <div className="absolute top-0 left-1/2 w-[1px] h-full border-l border-dashed border-[#FF007F]/20" />
+                <div className="absolute top-1/2 left-1/2 w-[240px] h-[240px] border border-dashed border-[#FF007F]/10 rounded-full -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute top-1/2 left-1/2 w-[140px] h-[140px] border border-dotted border-[#FF007F]/15 rounded-full -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute top-2 left-2 font-mono text-[6px] text-[#FF007F] opacity-70">
+                  GRID_ALIGN_PASS: 90° RADIAL
+                </div>
+                <div className="absolute bottom-2 right-2 font-mono text-[6px] text-[#FF007F] opacity-70">
+                  COREL_VECTOR: 1:1 TRUE_LINE
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* MAIN RENDER ACCORDING TO USER CONFIG */}
+          <div className="my-6 flex flex-col items-center justify-center flex-1 z-10">
             
-            {/* BRUTALIST STYLE PRESET */}
-            {vibe === "Brutalist" && (
+            {/* BUSINESS CARD MOCKUP */}
+            {activeMockupType === "card" && (
               <div 
-                className="w-full max-w-sm border-2 p-6 bg-black transition-all font-sans text-left relative rounded-xl shadow-lg"
-                style={{ borderColor: colorScheme }}
+                className={`w-[290px] sm:w-[320px] h-[180px] bg-black border p-5 flex flex-col justify-between relative rounded-xl shadow-2xl transition-all duration-300 ${
+                  vibe === "Brutalist" ? "border-2 rounded-none" :
+                  vibe === "Herbal" ? "border rounded-2xl border-dashed" :
+                  vibe === "Trophy" ? "border-2 border-double" : "border-white/10"
+                }`}
+                style={{ borderColor: vibe === "Brutalist" ? colorScheme : vibe === "Minimal" ? "rgba(255,255,255,0.1)" : colorScheme + "50" }}
               >
-                <div className="absolute top-2 right-2 font-mono text-[7px]" style={{ color: colorScheme }}>#012_BRUTAL</div>
-                <div className="text-4xl font-black leading-none uppercase tracking-tighter" style={{ color: colorScheme }}>
-                  {brandName || "MUTED"}
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <div style={{ color: colorScheme }}>
+                      {renderIcon("w-5 h-5")}
+                    </div>
+                    <span className={`font-mono text-[8px] tracking-widest text-[#A3A3A3] uppercase ${vibe === 'Brutalist' ? 'font-black text-white' : ''}`}>
+                      {brandName}
+                    </span>
+                  </div>
+                  <span className="text-[5.5px] font-mono text-gray-600">85x55mm B_CARD</span>
                 </div>
-                <div className="w-full h-[1px] bg-white/5 my-3"></div>
-                <p className="text-[10px] text-[#737373] leading-relaxed font-mono">
-                  TYPE: INDUSTRIAL LAB / PRINT PROOF V4<br />
-                  ACCENT COLOR COORDINATES: {colorScheme.toUpperCase()}
-                </p>
-                <div className="mt-4 flex gap-1 justify-end">
-                  <span className="w-2 h-2 bg-white"></span>
-                  <span className="w-2 h-2" style={{ backgroundColor: colorScheme }}></span>
-                  <span className="w-2 h-2 bg-white/10"></span>
+
+                <div className="text-left my-auto py-2">
+                  <h4 
+                    className={`text-white uppercase leading-none ${
+                      vibe === "Brutalist" ? "text-2xl font-black tracking-tighter" :
+                      vibe === "Minimal" ? "text-lg font-bold tracking-[0.2em]" :
+                      vibe === "Herbal" ? "text-xl font-extrabold tracking-tight" : "text-xl font-black tracking-wider"
+                    }`}
+                    style={vibe === "Brutalist" ? { color: colorScheme } : {}}
+                  >
+                    {brandName || "MUTED"}
+                  </h4>
+                  <p className="text-[7.5px] font-mono text-[#737373] mt-1">
+                    ESTD 2026 // {vibe.toUpperCase()} BRAND CAPSULE
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-end border-t border-white/5 pt-1.5 font-mono text-[6px] text-gray-500">
+                  <span>PLATE APPROVED: OK</span>
+                  <span>ACCENT: {colorScheme}</span>
                 </div>
               </div>
             )}
 
-            {/* MINIMAL STYLE PRESET */}
-            {vibe === "Minimal" && (
-              <div className="w-full max-w-sm border border-white/5 p-8 bg-black/40 font-sans text-center relative flex flex-col items-center rounded-xl shadow-lg">
-                <div className="w-12 h-12 rounded-full border flex items-center justify-center mb-4 transition-all" style={{ borderColor: colorScheme }}>
-                  <div className="w-6 h-6 rounded-full" style={{ backgroundColor: colorScheme }}></div>
+            {/* LETTERHEAD MOCKUP */}
+            {activeMockupType === "letterhead" && (
+              <div 
+                className={`w-[220px] h-[290px] bg-black border p-4 flex flex-col justify-between relative shadow-2xl transition-all duration-300 ${
+                  vibe === "Brutalist" ? "border-2 rounded-none" :
+                  vibe === "Herbal" ? "border rounded-xl border-dashed" :
+                  vibe === "Trophy" ? "border-2 border-double" : "border-white/10"
+                }`}
+                style={{ borderColor: vibe === "Brutalist" ? colorScheme : vibe === "Minimal" ? "rgba(255,255,255,0.1)" : colorScheme + "50" }}
+              >
+                {/* Header block */}
+                <div className="border-b border-white/5 pb-2 flex justify-between items-start">
+                  <div className="flex items-center gap-1.5">
+                    <div style={{ color: colorScheme }}>
+                      {renderIcon("w-4 h-4")}
+                    </div>
+                    <span className="text-[7px] font-mono font-bold uppercase tracking-wider text-white">
+                      {brandName}
+                    </span>
+                  </div>
+                  <div className="text-[5px] font-mono text-gray-600 text-right">
+                    COREL_PROOF_R1
+                  </div>
                 </div>
-                <h4 className="text-2xl font-bold tracking-[0.2em] text-white uppercase">
-                  {brandName || "COSMOS"}
-                </h4>
-                <p className="text-[8px] uppercase tracking-[0.4em] mt-2 text-[#737373] font-mono">
-                  ESTD 2026 / LIMITED CAPSULE
-                </p>
-                <div className="absolute bottom-2 right-3 font-mono text-[6px] text-[#737373]">V:3.2</div>
+
+                {/* Letter Body Lines */}
+                <div className="flex-1 py-4 space-y-2 select-none pointer-events-none opacity-20">
+                  <div className="h-[2px] bg-white w-4/5 rounded-full" />
+                  <div className="h-[2px] bg-white w-full rounded-full" />
+                  <div className="h-[2px] bg-white w-3/4 rounded-full" />
+                  <div className="h-[2px] bg-white w-5/6 rounded-full" />
+                  <div className="h-[2px] bg-white w-2/3 rounded-full" />
+                </div>
+
+                {/* Footer block */}
+                <div className="border-t border-white/5 pt-2 flex justify-between items-center font-mono text-[5.5px] text-gray-500">
+                  <span>INFO@BRAND.COM</span>
+                  <span>PAGE 01 / VECTOR_OK</span>
+                </div>
               </div>
             )}
 
-            {/* HERBAL STYLE PRESET */}
-            {vibe === "Herbal" && (
-              <div className="w-full max-w-sm border border-white/5 p-5 bg-black font-sans text-left relative border-t-4 rounded-xl shadow-lg" style={{ borderTopColor: colorScheme }}>
-                <div className="flex justify-between items-start font-mono text-[7px] text-[#737373]">
-                  <span>BOTANICAL COMPLIANT // RAW</span>
-                  <span style={{ color: colorScheme }}>100g CERTIFIED</span>
+            {/* PRODUCT HANGTAG */}
+            {activeMockupType === "tag" && (
+              <div 
+                className={`w-[130px] h-[220px] bg-black border p-4 flex flex-col justify-between relative shadow-2xl transition-all duration-300 ${
+                  vibe === "Brutalist" ? "border-2 rounded-none" :
+                  vibe === "Herbal" ? "border rounded-xl border-dashed" :
+                  vibe === "Trophy" ? "border-2 border-double" : "border-white/10"
+                }`}
+                style={{ borderColor: vibe === "Brutalist" ? colorScheme : vibe === "Minimal" ? "rgba(255,255,255,0.1)" : colorScheme + "50", borderRadius: "16px 16px 4px 4px" }}
+              >
+                {/* String Hole Rivet */}
+                <div className="mx-auto w-3 h-3 rounded-full bg-[#111] border border-white/20 flex items-center justify-center mb-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-black" />
                 </div>
-                <h4 className="text-xl font-extrabold text-white uppercase tracking-tight mt-3">
-                  {brandName || "HERB"} <span style={{ color: colorScheme }}>Naturals</span>
-                </h4>
-                <p className="text-[9px] text-[#737373] leading-relaxed mt-2 bg-white/[0.02] p-2.5 border border-white/5 border-dashed font-mono">
-                  Active Formula ingredients formulated in CorelDRAW print die-cut system.
-                </p>
-                <div className="mt-4 flex justify-between items-center font-mono text-[7px] text-[#737373] border-t border-white/5 pt-2">
-                  <span>REG NO: HRB-4091</span>
-                  <span className="font-bold underline">PRE-PRESS OK</span>
+
+                <div className="flex flex-col items-center justify-center my-auto py-2 text-center">
+                  <div style={{ color: colorScheme }} className="mb-2">
+                    {renderIcon("w-7 h-7")}
+                  </div>
+                  <h4 
+                    className={`text-white uppercase leading-none ${
+                      vibe === "Brutalist" ? "text-xl font-black tracking-tight" :
+                      vibe === "Minimal" ? "text-sm font-bold tracking-[0.2em]" :
+                      vibe === "Herbal" ? "text-lg font-extrabold" : "text-base font-black"
+                    }`}
+                    style={vibe === "Brutalist" ? { color: colorScheme } : {}}
+                  >
+                    {brandName || "HANGTAG"}
+                  </h4>
+                  <span className="text-[6.5px] font-mono text-gray-500 uppercase mt-1">
+                    CERTIFIED ITEM // 2026
+                  </span>
+                </div>
+
+                {/* Simulated barcode */}
+                <div className="flex flex-col items-center space-y-1 mt-2">
+                  <div className="flex justify-center items-center gap-[1.5px] h-5 w-full max-w-[80px] bg-white p-0.5 rounded-xs select-none">
+                    <div className="w-[1.5px] h-full bg-black" />
+                    <div className="w-[0.8px] h-full bg-black" />
+                    <div className="w-[2px] h-full bg-black" />
+                    <div className="w-[0.5px] h-full bg-black" />
+                    <div className="w-[1.5px] h-full bg-black" />
+                    <div className="w-[0.8px] h-full bg-black" />
+                    <div className="w-[2px] h-full bg-black" />
+                  </div>
+                  <span className="text-[5px] font-mono text-gray-500">#RAW_PRNT_902</span>
                 </div>
               </div>
             )}
 
-            {/* TROPHY STYLE PRESET */}
-            {vibe === "Trophy" && (
-              <div className="w-full max-w-sm border-2 border-double border-white/5 p-6 bg-black font-sans text-center relative rounded-xl shadow-lg">
-                <div className="absolute top-2 left-2 text-[6px] font-mono text-[#737373]">LASER ENGRAVE PATH DEVIATION V1</div>
-                <div className="w-16 h-16 rounded-full border border-dashed mx-auto my-3 flex items-center justify-center" style={{ borderColor: colorScheme }}>
-                  <Compass className="w-6 h-6 text-[#737373] animate-spin" style={{ color: colorScheme, animationDuration: '12s' }} />
+            {/* ACRYLIC SHIELD PLATE */}
+            {activeMockupType === "acrylic" && (
+              <div 
+                className={`w-[220px] sm:w-[240px] h-[220px] sm:h-[240px] bg-[#0c0c0e]/90 border-2 p-6 flex flex-col justify-between relative shadow-2xl transition-all duration-300 ${
+                  vibe === "Brutalist" ? "border-2 rounded-none" :
+                  vibe === "Herbal" ? "border rounded-3xl border-dashed" :
+                  vibe === "Trophy" ? "border-2 border-double" : "border-white/10"
+                }`}
+                style={{ borderColor: vibe === "Brutalist" ? colorScheme : vibe === "Minimal" ? "rgba(255,255,255,0.1)" : colorScheme + "50", borderRadius: vibe === "Brutalist" ? "0px" : "28px" }}
+              >
+                <div className="absolute top-2 left-6 text-[5px] font-mono text-gray-600 uppercase">
+                  LASER ENGRAVE PATH: VERIFIED
                 </div>
-                <h4 className="text-xl font-black text-white uppercase tracking-wide">
-                  {brandName || "CHAMPION"} AWARD
-                </h4>
-                <p className="text-[9px] text-[#737373] font-mono mt-1">
-                  1st Position Recognition Layout // Acrylic Cutting
-                </p>
-                <div className="mt-4 h-1.5 w-1/3 mx-auto rounded" style={{ backgroundColor: colorScheme }}></div>
+
+                <div className="flex flex-col items-center justify-center my-auto py-2 text-center">
+                  <div style={{ color: colorScheme }} className="mb-3 animate-pulse">
+                    {renderIcon("w-8 h-8")}
+                  </div>
+                  <h4 
+                    className={`text-white uppercase leading-none tracking-wide ${
+                      vibe === "Brutalist" ? "text-xl font-black" :
+                      vibe === "Minimal" ? "text-base font-bold tracking-[0.2em]" :
+                      vibe === "Herbal" ? "text-lg font-extrabold" : "text-lg font-black"
+                    }`}
+                    style={vibe === "Brutalist" ? { color: colorScheme } : {}}
+                  >
+                    {brandName || "EXCELLENCE"}
+                  </h4>
+                  <p className="text-[6.5px] font-mono text-gray-500 mt-2 max-w-[150px] mx-auto select-none">
+                    1st Position Vector Cutting Recognition Plate Profile
+                  </p>
+                </div>
+
+                {/* Metallic Award Base representation */}
+                <div className="h-2 w-full bg-gradient-to-r from-gray-500 via-gray-100 to-gray-600 border border-gray-600 rounded-sm shadow-sm flex items-center justify-center font-mono text-[4.5px] text-gray-800 font-bold uppercase select-none">
+                  [ STEEL MOUNT BASE ]
+                </div>
               </div>
             )}
 
@@ -266,7 +502,7 @@ export default function InteractiveSandbox() {
           {/* Canvas Tech details bottom footer */}
           <div className="border-t border-white/5 pt-4 flex flex-wrap justify-between font-mono text-[9px] text-[#737373] uppercase">
             <div>Style Vector Class: <span className="text-white">{vibe.toUpperCase()} SYSTEM</span></div>
-            <div>Calibration Frame: <span className="text-white">{colorScheme.toUpperCase()} HELIX</span></div>
+            <div>Mockup Model: <span className="text-white">{activeMockupType.toUpperCase()} v1</span></div>
           </div>
 
         </div>

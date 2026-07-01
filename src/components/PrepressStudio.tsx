@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'motion/react';
-import { Crop, Settings, Eye, HelpCircle, FileText, Palette, Layers, RefreshCw } from 'lucide-react';
+import { Crop, Settings, Eye, HelpCircle, FileText, Palette, Layers, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
 
 interface PrepressPreset {
   name: string;
@@ -50,6 +50,12 @@ export default function PrepressStudio() {
   const [showGrid, setShowGrid] = useState<boolean>(false);
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
+  const [resolutionDpi, setResolutionDpi] = useState<number>(300); // 72, 150, 300, 600
+  const [grommetInterval, setGrommetInterval] = useState<number>(2.0); // 1.0, 2.0, 3.0 feet
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [exportStep, setExportStep] = useState<number>(0);
+
   const [droplets, setDroplets] = useState<{ id: number; x: number; y: number; color: string }[]>([]);
   const [sweepKey, setSweepKey] = useState<number>(0);
 
@@ -85,6 +91,23 @@ export default function PrepressStudio() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const handleStartExport = () => {
+    setIsExporting(true);
+    setShowExportModal(true);
+    setExportStep(0);
+  };
+
+  useEffect(() => {
+    if (isExporting && exportStep < 5) {
+      const timer = setTimeout(() => {
+        setExportStep(prev => prev + 1);
+      }, 700);
+      return () => clearTimeout(timer);
+    } else if (exportStep === 5) {
+      setIsExporting(false);
+    }
+  }, [isExporting, exportStep]);
+
   // Computed values
   const titleText = customTitle || activePreset.defaultTitle;
   const subText = customSub || activePreset.defaultSub;
@@ -106,7 +129,7 @@ export default function PrepressStudio() {
     layoutW = maxH * aspectFraction;
   }
 
-  // Generate eyelet/grommet dots along the outer boundary
+  // Generate eyelet/grommet dots along the outer boundary dynamically based on grommetInterval
   const getGrommetsList = () => {
     const list: { top: string; left: string }[] = [];
     if (!showGrommets) return list;
@@ -117,18 +140,26 @@ export default function PrepressStudio() {
     list.push({ top: '96%', left: '4%' });
     list.push({ top: '96%', left: '96%' });
 
-    // Along top & bottom (at roughly 20%, 40%, 60%, 80%)
-    if (activePreset.wFeet >= 6) {
-      for (let offset = 20; offset <= 80; offset += 20) {
-        list.push({ top: '4%', left: `${offset}%` });
-        list.push({ top: '96%', left: `${offset}%` });
+    const totalWidth = activePreset.wFeet;
+    const totalHeight = activePreset.hFeet;
+
+    // top & bottom row grommets
+    const wSegments = Math.floor(totalWidth / grommetInterval);
+    if (wSegments > 1) {
+      for (let i = 1; i < wSegments; i++) {
+        const pct = (i / wSegments) * 92 + 4; // stay between 4% and 96%
+        list.push({ top: '4%', left: `${pct}%` });
+        list.push({ top: '96%', left: `${pct}%` });
       }
     }
-    // Along left & right (if tall)
-    if (activePreset.hFeet >= 5) {
-      for (let offset = 33; offset <= 66; offset += 33) {
-        list.push({ top: `${offset}%`, left: '4%' });
-        list.push({ top: `${offset}%`, left: '96%' });
+
+    // left & right column grommets
+    const hSegments = Math.floor(totalHeight / grommetInterval);
+    if (hSegments > 1) {
+      for (let i = 1; i < hSegments; i++) {
+        const pct = (i / hSegments) * 92 + 4;
+        list.push({ top: `${pct}%`, left: '4%' });
+        list.push({ top: `${pct}%`, left: '96%' });
       }
     }
 
@@ -146,7 +177,7 @@ export default function PrepressStudio() {
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8">
         <div>
           <span className="text-xs font-mono uppercase text-[#FF3E00] tracking-widest font-bold">Interactive Tool</span>
-          <h2 className="text-4xl font-extrabold text-white tracking-tighter uppercase mt-1">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tighter uppercase mt-1">
             CorelDRAW Prepress & Sizing Simulator
           </h2>
           <p className="text-sm text-[#737373] mt-2 max-w-2xl">
@@ -155,7 +186,7 @@ export default function PrepressStudio() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-[#0F0F0F] border border-[#222] p-6 md:p-8 rounded-lg relative overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-[#0F0F0F] border border-[#222] p-4 sm:p-6 md:p-8 rounded-lg relative overflow-hidden">
         
         {/* Left Column Controls - cols: 5 */}
         <div className="lg:col-span-4 space-y-6 flex flex-col justify-between">
@@ -219,6 +250,59 @@ export default function PrepressStudio() {
                   maxLength={70}
                   className="w-full bg-[#1A1A1A] border border-[#333] rounded px-3 py-1.5 text-xs text-white uppercase focus:border-[#FF3E00] focus:outline-none placeholder-gray-600 font-mono"
                 />
+              </div>
+            </div>
+
+            <span className="text-[10px] font-mono text-[#FF3E00] uppercase tracking-wider block border-b border-[#222] pt-1 pb-1">
+              Fine-Tuning Parameters
+            </span>
+
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between font-mono text-[9px] text-[#8c8c8c] mb-1">
+                  <span>RESOLUTION:</span>
+                  <span className="text-white font-bold">{resolutionDpi} DPI</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={3}
+                  step={1}
+                  value={resolutionDpi === 72 ? 0 : resolutionDpi === 150 ? 1 : resolutionDpi === 300 ? 2 : 3}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value);
+                    const dpis = [72, 150, 300, 600];
+                    setResolutionDpi(dpis[idx]);
+                  }}
+                  className="w-full h-1 bg-[#1A1A1A] rounded-lg appearance-none cursor-pointer accent-[#FF3E00]"
+                />
+                <div className="flex justify-between font-mono text-[7px] text-[#555] mt-0.5">
+                  <span>72 (DRAFT)</span>
+                  <span>150 (PROOF)</span>
+                  <span>300 (PRESS)</span>
+                  <span>600 (VECTOR)</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between font-mono text-[9px] text-[#8c8c8c] mb-1">
+                  <span>EYELET RIVET INTERVAL:</span>
+                  <span className="text-white font-bold">{grommetInterval.toFixed(1)} ft</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.5}
+                  value={grommetInterval}
+                  onChange={(e) => setGrommetInterval(parseFloat(e.target.value))}
+                  className="w-full h-1 bg-[#1A1A1A] rounded-lg appearance-none cursor-pointer accent-[#FF3E00]"
+                />
+                <div className="flex justify-between font-mono text-[7px] text-[#555] mt-0.5">
+                  <span>1.0 ft (DENSE)</span>
+                  <span>2.0 ft (OPTIMAL)</span>
+                  <span>3.0 ft (SPARSE)</span>
+                </div>
               </div>
             </div>
           </div>
@@ -368,6 +452,17 @@ export default function PrepressStudio() {
                 />
               )}
 
+              {/* Dynamic DPI Pixel/Halftone Mesh Overlay */}
+              {resolutionDpi <= 150 && (
+                <div 
+                  className="absolute inset-0 pointer-events-none z-20 opacity-[0.25]"
+                  style={{ 
+                    backgroundImage: 'radial-gradient(rgba(0, 0, 0, 0.9) 35%, transparent 35%)', 
+                    backgroundSize: resolutionDpi === 72 ? '4px 4px' : '2.5px 2.5px' 
+                  }} 
+                />
+              )}
+
               {/* Metal Grommet Eyelets Punch Simulator */}
               <AnimatePresence>
                 {showGrommets && getGrommetsList().map((g, i) => (
@@ -387,7 +482,10 @@ export default function PrepressStudio() {
               </AnimatePresence>
 
               {/* Main Content inside the Graphic Banner */}
-              <div className="text-center z-10 my-auto p-2">
+              <div 
+                className="text-center z-10 my-auto p-2 transition-all duration-300"
+                style={{ filter: resolutionDpi === 72 ? "blur(0.6px)" : resolutionDpi === 150 ? "blur(0.25px)" : "none" }}
+              >
                 <h3 className="text-white font-black tracking-tight uppercase leading-none drop-shadow-md break-words transition-all font-sans" style={{ fontSize: `${Math.max(14, Math.floor(layoutW / 12))}px` }}>
                   {titleText}
                 </h3>
@@ -405,10 +503,10 @@ export default function PrepressStudio() {
             </motion.div>
 
             {/* Layout Aspect rulers */}
-            <div className="absolute top-2 left-4 text-[10px] text-[#A3A3A3] font-mono uppercase bg-black/60 px-2 py-0.5 border border-[#222]">
+            <div className="hidden md:block absolute top-2 left-4 text-[10px] text-[#A3A3A3] font-mono uppercase bg-black/60 px-2 py-0.5 border border-[#222]">
               Standard Bleed Safety: {activePreset.bleedInches}" Clearance
             </div>
-            <div className="absolute bottom-2 right-4 text-[10px] text-[#A3A3A3] font-mono uppercase bg-black/60 px-2 py-0.5 border border-[#222]">
+            <div className="hidden md:block absolute bottom-2 right-4 text-[10px] text-[#A3A3A3] font-mono uppercase bg-black/60 px-2 py-0.5 border border-[#222]">
               Preset Print Size: {activePreset.wFeet}ft × {activePreset.hFeet}ft Width/Height
             </div>
           </div>
@@ -419,7 +517,7 @@ export default function PrepressStudio() {
               <span className="text-[10px] font-mono text-[#D4D4D4] uppercase block">
                 Select Color Profile Calibrator
               </span>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   onClick={() => setColorProfile('CMYK_PRINT')}
                   className={`flex-1 text-center py-2 text-xs font-mono rounded transition-all uppercase border ${
@@ -428,7 +526,7 @@ export default function PrepressStudio() {
                       : 'bg-[#1C1C1C] text-[#A3A3A3] hover:text-white border-[#222]'
                   }`}
                 >
-                  CMYK (Aggressive Coated Print Profile)
+                  CMYK (Coated Print)
                 </button>
                 <button
                   onClick={() => setColorProfile('RGB_SCREEN')}
@@ -438,7 +536,7 @@ export default function PrepressStudio() {
                       : 'bg-[#1C1C1C] text-[#A3A3A3] hover:text-white border-[#222]'
                   }`}
                 >
-                  RGB (Screen Emulated Profile)
+                  RGB (Screen Emulated)
                 </button>
               </div>
             </div>
@@ -450,7 +548,9 @@ export default function PrepressStudio() {
               </div>
               <div className="flex justify-between">
                 <span>Computed Density Limit:</span>
-                <span className="text-white font-bold">300 DPI Standard Output</span>
+                <span className={`font-bold ${resolutionDpi < 300 ? 'text-[#FF3E00]' : 'text-white'}`}>
+                  {resolutionDpi} DPI {resolutionDpi < 300 ? '(Low Res)' : '(Press Ok)'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Sizing Clearance Guard:</span>
@@ -458,6 +558,130 @@ export default function PrepressStudio() {
               </div>
             </div>
           </div>
+
+          {/* Pre-flight Warnings & Exporter Suite */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Pre-flight Warnings widget */}
+            <div className="bg-[#111]/40 border border-[#222] p-4 rounded-lg flex flex-col justify-between">
+              <div>
+                <span className="block font-mono text-[9px] text-[#FF3E00] uppercase font-bold mb-2">// Pre-flight Warnings Scanner:</span>
+                {(() => {
+                  const warnings: string[] = [];
+                  if (activePreset.bleedInches < 1.0) {
+                    warnings.push(`Bleed guard (${activePreset.bleedInches}") is narrow for flex cutting.`);
+                  }
+                  if (colorProfile === 'RGB_SCREEN') {
+                    warnings.push(`RGB profile cannot print; convert to CMYK.`);
+                  }
+                  if (resolutionDpi < 300) {
+                    warnings.push(`Resolution (${resolutionDpi} DPI) is below print standard (300 DPI).`);
+                  }
+                  if (titleText.length > 25) {
+                    warnings.push(`Headline is long; check text sizes.`);
+                  }
+                  
+                  if (warnings.length === 0) {
+                    return (
+                      <div className="text-[10px] font-mono text-[#00FF00] flex items-center gap-1.5 py-1">
+                        <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>All pre-flight checks: compliant</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-1.5 max-h-[85px] overflow-y-auto pr-1">
+                      {warnings.map((w, idx) => (
+                        <div key={idx} className="text-[8.5px] font-mono text-[#FF3E00] flex items-start gap-1">
+                          <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                          <span>{w}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              <div className="text-[8px] font-mono text-[#737373] mt-2 border-t border-white/5 pt-2 uppercase">
+                Scanner status: online
+              </div>
+            </div>
+
+            {/* Export Package action */}
+            <div className="bg-[#111]/40 border border-[#222] p-4 rounded-lg flex flex-col justify-between">
+              <div>
+                <span className="block font-mono text-[9px] text-[#A3A3A3] uppercase font-bold mb-1.5">// Production Export:</span>
+                <p className="text-[9.5px] text-[#737373] leading-relaxed mb-3">
+                  Compile typography, paths, embedded spot colors, and bleed layouts into a production-ready package.
+                </p>
+              </div>
+              <button
+                onClick={handleStartExport}
+                className="w-full bg-[#FF3E00] hover:bg-white text-black font-mono font-bold uppercase text-[9.5px] py-2.5 rounded transition-colors cursor-pointer"
+              >
+                Compile Print Package
+              </button>
+            </div>
+          </div>
+
+          {/* Exporting Terminal Modal Overlay */}
+          <AnimatePresence>
+            {showExportModal && (
+              <div 
+                className="fixed inset-0 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xs"
+                style={{ zIndex: 9999 }}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-[#0A0A0A] border border-[#FF3E00] max-w-md w-full rounded p-6 font-mono text-[10px] text-[#A3A3A3] space-y-4"
+                >
+                  <div className="flex justify-between items-center border-b border-[#222] pb-3">
+                    <span className="text-[#FF3E00] uppercase font-bold tracking-widest text-[11px] flex items-center gap-1.5">
+                      <Settings className="w-4 h-4 animate-spin" /> Vector Packaging Compiler
+                    </span>
+                    <button 
+                      onClick={() => setShowExportModal(false)}
+                      disabled={isExporting}
+                      className="text-white hover:text-[#FF3E00] uppercase disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      [ Close ]
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto bg-black p-3.5 border border-[#222] rounded text-left">
+                    <div className="text-white font-bold">[SYSTEM] INITIATING PRE-FLIGHT COMPILING ROUTINE...</div>
+                    
+                    {exportStep >= 1 && <div className="text-[#00FFFF]">&gt; Separating C-M-Y-K plate layers... OK</div>}
+                    {exportStep >= 2 && <div className="text-[#FF00FF]">&gt; Vectorizing font paths and bezier curves... OK</div>}
+                    {exportStep >= 3 && <div className="text-[#FFFF00]">&gt; Embedding ICC Color profiles (Coated GRACoL)... OK</div>}
+                    {exportStep >= 4 && <div className="text-white">&gt; Compiling EPS & PDF/X-4 target packages... OK</div>}
+                    {exportStep >= 5 && (
+                      <div className="text-[#00FF00] font-bold mt-2">
+                        &gt;&gt; PRODUCTION PACKAGE GENERATED: OK (AFFAN_PREPRESS_OK.ZIP)
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-[8px] text-[#555] uppercase">Target: CorelDRAW X8 / PDF-X4</span>
+                    {exportStep === 5 ? (
+                      <button 
+                        onClick={() => {
+                          alert("Simulated Download: Outputting 'affan_prepress_ok.zip' to downloads folder!");
+                          setShowExportModal(false);
+                        }}
+                        className="bg-[#00FF00] text-black font-bold px-3 py-1.5 uppercase hover:bg-white transition-colors"
+                      >
+                        Download ZIP Package
+                      </button>
+                    ) : (
+                      <div className="text-white animate-pulse">Compiling files...</div>
+                    )}
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
         </div>
       </div>

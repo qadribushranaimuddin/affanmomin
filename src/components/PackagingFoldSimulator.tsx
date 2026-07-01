@@ -159,6 +159,7 @@ export default function PackagingFoldSimulator() {
   const [activeViewMode, setActiveViewMode] = useState<"design" | "spectrograph" | "spot-uv">("design");
   const [showStressHeatmap, setShowStressHeatmap] = useState(false);
   const [activeControlTab, setActiveControlTab] = useState<"struct" | "finish" | "press" | "train" | "stress">("struct");
+  const [activePattern, setActivePattern] = useState<"lines" | "leaf" | "grid" | "diamond" | "none">("lines");
 
   const dragStart = useRef({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -330,8 +331,25 @@ export default function PackagingFoldSimulator() {
 
   const foldAngles = getSequentialAngles();
 
+  // Pattern Generator for Cardboard print overlays
+  const getPatternBg = () => {
+    if (activePattern === "lines") {
+      return "repeating-linear-gradient(45deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03) 2px, transparent 2px, transparent 10px)";
+    }
+    if (activePattern === "grid") {
+      return "repeating-linear-gradient(0deg, transparent, transparent 9px, rgba(255,255,255,0.02) 9px, rgba(255,255,255,0.02) 10px), repeating-linear-gradient(90deg, transparent, transparent 9px, rgba(255,255,255,0.02) 9px, rgba(255,255,255,0.02) 10px)";
+    }
+    if (activePattern === "diamond") {
+      return "repeating-linear-gradient(60deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 1px, transparent 1px, transparent 12px), repeating-linear-gradient(-60deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 1px, transparent 1px, transparent 12px)";
+    }
+    if (activePattern === "leaf") {
+      return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.04)' stroke-width='1'%3E%3Cpath d='M12 2C12 2 6 7 6 12C6 17 12 22 12 22C12 22 18 17 18 12C18 7 12 2'/%3E%3C/svg%3E\")";
+    }
+    return "none";
+  };
+
   // Stock Styling classes helper
-  const getPanelStyles = (isLogoPanel: boolean = false) => {
+  const getPanelStyles = (isMainFace: boolean = false) => {
     // Dynamic border thickness based on corrugation fluting profiles
     const borderWeight = 
       fluteProfile === "A" ? "4.5px" : 
@@ -370,10 +388,8 @@ export default function PackagingFoldSimulator() {
         case "kraft":
           return {
             backgroundColor: "rgba(180, 140, 100, 0.94)",
-            backgroundImage: "none",
-            backgroundSize: "auto",
-            backgroundPosition: "0% 0%",
-            backgroundRepeat: "no-repeat",
+            backgroundImage: isMainFace ? getPatternBg() : "none",
+            backgroundSize: isMainFace ? "24px 24px" : "auto",
             borderColor: showCreaseLines ? "rgba(120, 80, 40, 0.75)" : "transparent",
             borderStyle: "dashed" as const,
             borderWidth: borderWeight,
@@ -384,10 +400,8 @@ export default function PackagingFoldSimulator() {
         case "luxury":
           return {
             backgroundColor: "rgba(18, 20, 22, 0.98)",
-            backgroundImage: "none",
-            backgroundSize: "auto",
-            backgroundPosition: "0% 0%",
-            backgroundRepeat: "no-repeat",
+            backgroundImage: isMainFace ? getPatternBg() : "none",
+            backgroundSize: isMainFace ? "24px 24px" : "auto",
             borderColor: showCreaseLines ? "rgba(212, 175, 55, 0.65)" : "transparent",
             borderStyle: "dashed" as const,
             borderWidth: borderWeight,
@@ -397,10 +411,10 @@ export default function PackagingFoldSimulator() {
         case "holo":
           return {
             backgroundColor: "transparent",
-            backgroundImage: "linear-gradient(135deg, rgba(8, 145, 178, 0.68), rgba(192, 38, 211, 0.68), rgba(202, 138, 4, 0.68))",
-            backgroundSize: "auto",
-            backgroundPosition: "0% 0%",
-            backgroundRepeat: "no-repeat",
+            backgroundImage: isMainFace 
+              ? `${getPatternBg()}, linear-gradient(135deg, rgba(8, 145, 178, 0.68), rgba(192, 38, 211, 0.68), rgba(202, 138, 4, 0.68))`
+              : `linear-gradient(135deg, rgba(8, 145, 178, 0.68), rgba(192, 38, 211, 0.68), rgba(202, 138, 4, 0.68))`,
+            backgroundSize: isMainFace ? "24px 24px, auto" : "auto",
             borderColor: showCreaseLines ? "rgba(255, 255, 255, 0.75)" : "transparent",
             borderStyle: "dashed text" as any,
             borderWidth: borderWeight,
@@ -411,10 +425,8 @@ export default function PackagingFoldSimulator() {
         default:
           return {
             backgroundColor: "rgba(245, 245, 248, 0.96)",
-            backgroundImage: "none",
-            backgroundSize: "auto",
-            backgroundPosition: "0% 0%",
-            backgroundRepeat: "no-repeat",
+            backgroundImage: isMainFace ? getPatternBg() : "none",
+            backgroundSize: isMainFace ? "24px 24px" : "auto",
             borderColor: showCreaseLines ? "rgba(100, 116, 139, 0.55)" : "transparent",
             borderStyle: "dashed" as const,
             borderWidth: borderWeight,
@@ -436,18 +448,22 @@ export default function PackagingFoldSimulator() {
       if (stock === "holo") {
         return {
           ...style,
-          backgroundImage: `${glossGradient}, linear-gradient(135deg, rgba(8, 145, 178, 0.68), rgba(192, 38, 211, 0.68), rgba(202, 138, 4, 0.68))`,
-          backgroundSize: "200% 100%, auto",
-          backgroundPosition: `${gradientPosition} 0, 0 0`,
-          backgroundRepeat: "no-repeat, no-repeat"
+          backgroundImage: isMainFace 
+            ? `${glossGradient}, ${getPatternBg()}, linear-gradient(135deg, rgba(8, 145, 178, 0.68), rgba(192, 38, 211, 0.68), rgba(202, 138, 4, 0.68))`
+            : `${glossGradient}, linear-gradient(135deg, rgba(8, 145, 178, 0.68), rgba(192, 38, 211, 0.68), rgba(202, 138, 4, 0.68))`,
+          backgroundSize: isMainFace ? "200% 100%, 24px 24px, auto" : "200% 100%, auto",
+          backgroundPosition: `${gradientPosition} 0, 0 0, 0 0`,
+          backgroundRepeat: isMainFace ? "no-repeat, repeat, no-repeat" : "no-repeat, no-repeat"
         };
       } else {
         return {
           ...style,
-          backgroundImage: glossGradient,
-          backgroundSize: "200% 100%",
-          backgroundPosition: `${gradientPosition} 0`,
-          backgroundRepeat: "no-repeat"
+          backgroundImage: isMainFace 
+            ? `${glossGradient}, ${getPatternBg()}`
+            : glossGradient,
+          backgroundSize: isMainFace ? "200% 100%, 24px 24px" : "200% 100%",
+          backgroundPosition: `${gradientPosition} 0, 0 0`,
+          backgroundRepeat: isMainFace ? "no-repeat, repeat" : "no-repeat"
         };
       }
     }
@@ -541,6 +557,11 @@ export default function PackagingFoldSimulator() {
   const areaM2 = (flatWidth * flatHeight) / 1000000;
   
   const estimatedWaste = Math.max(14, Math.min(48, Math.round(100 - ((boxWidth * boxHeight * 4.5) / (flatWidth * flatHeight)) * 100)));
+
+  // Dynamic Volume and Sheet Weight calculations
+  const boxVolumeCm3 = Math.round((boxWidth * boxHeight * boxDepth) / 1000);
+  const boxVolumeLiters = (boxVolumeCm3 / 1000).toFixed(3);
+  const estimatedSheetWeightGrams = (areaM2 * weightVal).toFixed(2);
 
   // Maximum compression capability (kN) based on corrugation fluting select:
   const getMaximumCompressionForce = () => {
@@ -760,7 +781,7 @@ export default function PackagingFoldSimulator() {
                   height: `${boxHeight}px`,
                   transformStyle: "preserve-3d",
                   transform: "translate3d(0, 0, 0)",
-                  ...getPanelStyles()
+                  ...getPanelStyles(true)
                 }}
                 className={`absolute border p-2 flex flex-col justify-between font-mono text-[6px] ${getCutLineClass()}`}
               >
@@ -869,7 +890,7 @@ export default function PackagingFoldSimulator() {
                   transformOrigin: "bottom",
                   transform: `translate3d(0, -${boxHeight}px, 0) rotateX(${-foldAngles.rear}deg)`,
                   transformStyle: "preserve-3d",
-                  ...getPanelStyles()
+                  ...getPanelStyles(true)
                 }}
                 className={`absolute border p-2 flex flex-col justify-between font-mono text-[6px] ${getCutLineClass()}`}
               >
@@ -994,7 +1015,7 @@ export default function PackagingFoldSimulator() {
                   height: `${boxHeight * 0.85}px`,
                   transformStyle: "preserve-3d",
                   transform: "translate3d(0, 0, 0)",
-                  ...getPanelStyles()
+                  ...getPanelStyles(true)
                 }}
                 className={`absolute border p-2 flex flex-col justify-between font-mono text-[6px] ${getCutLineClass()}`}
               >
@@ -1175,7 +1196,7 @@ export default function PackagingFoldSimulator() {
                   height: `${boxHeight}px`,
                   transformStyle: "preserve-3d",
                   transform: "translate3d(0, 0, 0)",
-                  ...getPanelStyles()
+                  ...getPanelStyles(true)
                 }}
                 className={`absolute border p-2 flex flex-col justify-between font-mono text-[6px] ${getCutLineClass()}`}
               >
@@ -1277,7 +1298,7 @@ export default function PackagingFoldSimulator() {
                     transformOrigin: "bottom",
                     transform: `translate3d(0, -${boxHeight}px, 0) rotateX(${-foldAngles.lid}deg)`,
                     transformStyle: "preserve-3d",
-                    ...getPanelStyles()
+                    ...getPanelStyles(true)
                   }}
                   className={`absolute left-0 border p-2 flex flex-col justify-between font-mono text-[5.5px] ${getCutLineClass()}`}
                 >
@@ -1543,7 +1564,7 @@ export default function PackagingFoldSimulator() {
                       ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1.5 md:border-l md:border-brand-border/30 md:pl-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-1.5 md:border-l md:border-brand-border/30 md:pl-4">
                     <div>
                       <span className="text-brand-muted uppercase font-bold text-[7.5px]">Required Blank Sheet:</span>
                       <div className="text-brand-text font-black text-[9.5px]">{flatWidth} x {flatHeight} mm</div>
@@ -1559,6 +1580,14 @@ export default function PackagingFoldSimulator() {
                     <div>
                       <span className="text-brand-muted uppercase font-bold text-[7.5px]">Nesting Trim Waste:</span>
                       <div className="text-rose-400 font-black text-[9.5px]">{estimatedWaste}% trim</div>
+                    </div>
+                    <div>
+                      <span className="text-brand-muted uppercase font-bold text-[7.5px]">Box Volume/Capacity:</span>
+                      <div className="text-brand-text font-black text-[9.5px]">{boxVolumeLiters} L ({boxVolumeCm3} mL)</div>
+                    </div>
+                    <div>
+                      <span className="text-brand-muted uppercase font-bold text-[7.5px]">Fibre Blank Weight:</span>
+                      <div className="text-[#00FF00] font-black text-[9.5px]">{estimatedSheetWeightGrams} grams</div>
                     </div>
                   </div>
                 </div>
@@ -1611,14 +1640,51 @@ export default function PackagingFoldSimulator() {
                   </div>
                 </div>
 
-                <div className="border border-brand-border/40 bg-brand-bg/60 p-2 text-left font-mono text-[8px] flex items-center justify-between gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-brand-border/20 pt-3">
+                  <div className="space-y-1 font-mono text-[8px] leading-tight select-none">
+                    <span className="text-brand-muted uppercase font-bold font-mono">// SELECT PRINT PATTERN OVERLAY:</span>
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {[
+                        { id: "none", name: "Solid Color" },
+                        { id: "lines", name: "Diagonal Lines" },
+                        { id: "grid", name: "Engineering Grid" },
+                        { id: "diamond", name: "Diamonds" },
+                        { id: "leaf", name: "Organic Leaf" }
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActivePattern(item.id as any);
+                            playFoldClick(300, 0.05);
+                          }}
+                          className={`px-2 py-0.5 border text-[7.5px] uppercase font-bold cursor-pointer ${activePattern === item.id ? 'bg-brand-accent/25 border-brand-accent text-brand-text' : 'bg-brand-bg/60 border-brand-border/40 text-brand-muted hover:text-brand-text'}`}
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 font-mono text-[8px] leading-tight select-none flex flex-col justify-end">
+                    <div className="flex justify-between border-b border-brand-border/10 pb-1 mb-1">
+                      <span className="text-brand-muted">Active Pattern Stock:</span>
+                      <span className="text-white font-bold">{activePattern.toUpperCase()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-brand-muted">Gloss Finish Varnish:</span>
+                      <span className="text-brand-accent font-bold">{glossOverlayActive ? "AQUEOUS GLOSS ACTIVE" : "MATTE ONLY"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border border-brand-border/40 bg-brand-bg/60 p-2 text-left font-mono text-[8px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-brand-border/20 pt-3">
                   <div>
                     <span className="text-brand-accent font-bold uppercase select-none">// Active Layout Render Overlay Mode:</span>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex flex-wrap gap-1.5 mt-1">
                       {[
-                        { id: "design", label: "Standard 3D Art" },
-                        { id: "spectrograph", label: "Aqueous Plate Spectrograph" },
-                        { id: "spot-uv", label: "Selective Spot-UV Mask" }
+                        { id: "design", label: "Standard 3D Art", short: "3D Art" },
+                        { id: "spectrograph", label: "Aqueous Plate Spectrograph", short: "Spectrograph" },
+                        { id: "spot-uv", label: "Selective Spot-UV Mask", short: "Spot-UV" }
                       ].map((mode) => (
                         <button
                           key={mode.id}
@@ -1626,14 +1692,15 @@ export default function PackagingFoldSimulator() {
                             setActiveViewMode(mode.id as any);
                             playFoldClick(340, 0.06);
                           }}
-                          className={`px-2.5 py-0.5 border text-[7.5px] cursor-pointer font-bold select-none ${activeViewMode === mode.id ? 'bg-brand-accent/20 border-brand-accent text-brand-accent' : 'bg-brand-bg/40 border-brand-border/40 text-brand-muted hover:text-brand-text'}`}
+                          className={`px-2 py-0.5 border text-[7.5px] cursor-pointer font-bold select-none ${activeViewMode === mode.id ? 'bg-brand-accent/20 border-brand-accent text-brand-accent' : 'bg-brand-bg/40 border-brand-border/40 text-brand-muted hover:text-brand-text'}`}
                         >
-                          {mode.label}
+                          <span className="hidden sm:inline">{mode.label}</span>
+                          <span className="sm:hidden">{mode.short}</span>
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div className="text-right text-[7px] text-brand-muted max-w-[200px]">
+                  <div className="text-left sm:text-right text-[7px] text-brand-muted max-w-xs">
                     Selective varnish maps reflect dynamic light as structural folding angles shift.
                   </div>
                 </div>
@@ -1674,7 +1741,7 @@ export default function PackagingFoldSimulator() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border border-brand-border/30 bg-brand-bg/60 p-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border border-brand-border/30 bg-brand-bg/60 p-2">
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-1.5 font-mono text-[8.5px] text-brand-muted hover:text-brand-text cursor-pointer transition-colors">
                       <input 
@@ -1686,7 +1753,7 @@ export default function PackagingFoldSimulator() {
                       <span className={showBleedLines ? "text-brand-accent font-bold" : "text-brand-muted"}>[OVERLAY BLEED & SAFE ZONE MARGINS]</span>
                     </label>
                   </div>
-                  <div className="text-right text-[7.5px] text-brand-muted leading-none">
+                  <div className="text-left sm:text-right text-[7.5px] text-brand-muted leading-none">
                     <span className="text-red-400 inline-block mr-1">■</span> Bleed Line (+3.2mm Trim Zone) | <span className="text-emerald-400 inline-block mr-1">■</span> Safe Text Margin (3mm Inward)
                   </div>
                 </div>
@@ -1696,8 +1763,8 @@ export default function PackagingFoldSimulator() {
             {/* TAB 4: ASSEMBLY WORKSPACE ACADEMY */}
             {activeControlTab === "train" && (
               <div className="space-y-3 font-mono text-[8px] leading-tight select-none">
-                <div className="flex items-center justify-between border-b border-brand-border/30 pb-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-brand-border/30 pb-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => {
                         setTrainingMode(!trainingMode);
@@ -1718,9 +1785,9 @@ export default function PackagingFoldSimulator() {
                   </div>
 
                   {trainingMode && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 justify-between sm:justify-end w-full sm:w-auto">
                       <span className="text-brand-muted font-bold uppercase">Cadet Crease Match Score:</span>
-                      <span className="text-[10px] font-black text-brand-text bg-brand-accent/20 border border-brand-accent px-1.5 py-0.5 rounded-[1px]">
+                      <span className="text-[10px] font-black text-brand-text bg-brand-accent/20 border border-brand-accent px-1.5 py-0.5 rounded-[1px] shrink-0">
                         {currentStep === 1 && Math.abs(foldProgress - 0.33) < 0.06 ? "100% (CRITICAL MATCH)" : 
                          currentStep === 2 && Math.abs(foldProgress - 0.66) < 0.06 ? "100% (CRITICAL MATCH)" :
                          currentStep === 3 && Math.abs(foldProgress - 1.0) < 0.06 ? "100% (CRITICAL MATCH)" :

@@ -95,8 +95,10 @@ export default function Navbar({ activeSection, onNavigate, theme, onToggleTheme
   ];
 
   const handleItemClick = (id: string) => {
-    onNavigate(`${id}-section`);
     setMobileMenuOpen(false);
+    setTimeout(() => {
+      onNavigate(`${id}-section`);
+    }, 100);
   };
 
   return (

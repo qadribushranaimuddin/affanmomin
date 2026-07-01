@@ -227,12 +227,12 @@ export default function AboutSection() {
             </div>
 
             {/* Tab Selector Buttons - Bento Styling */}
-            <div className="flex flex-col gap-2 font-mono text-[10px] uppercase tracking-wider">
+            <div className="flex flex-row lg:flex-col gap-2 font-mono text-[10px] uppercase tracking-wider">
               {(["bio", "education", "hobbies"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-3 px-4 text-left cursor-pointer transition-all border rounded-lg ${
+                  className={`flex-1 py-3 px-2 sm:px-4 text-center lg:text-left cursor-pointer transition-all border rounded-lg ${
                     activeTab === tab
                       ? "bg-[#FF3E00] text-black font-extrabold font-black border-[#FF3E00] shadow-[0_0_15px_rgba(255,62,0,0.2)]"
                       : "bg-[#111]/30 backdrop-blur-md text-[#A3A3A3] border-white/5 hover:border-[#FF3E00]/40 hover:text-white"

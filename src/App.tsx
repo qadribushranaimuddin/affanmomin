@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import Navbar from './components/Navbar';
+import { Analytics } from "@vercel/analytics/react";
 import Hero from './components/Hero';
 import AboutSection from './components/AboutSection';
 import PortfolioShowcase from './components/PortfolioShowcase';
@@ -947,6 +948,7 @@ export default function App() {
           />
         </>
       )}
+      <Analytics />
     </div>
   );
 }

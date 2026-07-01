@@ -583,7 +583,7 @@ export default function Hero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="group flex items-center gap-3 sm:gap-5 bg-[#121212] p-4 sm:p-5 border border-[#222] self-start md:self-auto rounded-lg relative overflow-hidden hover:border-[#FF3E00]/40 transition-all duration-300 w-full max-w-[345px] h-[168px] shrink-0 select-none cursor-grab active:cursor-grabbing"
+            className="group flex items-center gap-3 sm:gap-5 bg-[#121212] p-4 sm:p-5 border border-[#222] self-start md:self-auto rounded-lg relative overflow-hidden hover:border-[#FF3E00]/40 transition-all duration-300 w-full max-w-[345px] h-[168px] select-none cursor-grab active:cursor-grabbing"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.15}

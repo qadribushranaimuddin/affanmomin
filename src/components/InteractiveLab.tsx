@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Sliders, Award, Layers, SlidersHorizontal } from "lucide-react";
+import { Sliders, Award, Layers, SlidersHorizontal, Gauge } from "lucide-react";
 import PrepressStudio from "./PrepressStudio";
 import PostPressLab from "./PostPressLab";
 import InteractiveSandbox from "./InteractiveSandbox";
+import PressroomSimulator from "./PressroomSimulator";
 
-type LabTab = "prepress" | "postpress" | "sandbox";
+type LabTab = "prepress" | "postpress" | "sandbox" | "pressroom";
 
 export default function InteractiveLab() {
   const [activeTab, setActiveTab] = useState<LabTab>("prepress");
@@ -29,6 +30,12 @@ export default function InteractiveLab() {
       label: "Brand Identity Sandbox", 
       subtitle: "CorelDRAW Preset Sandbox", 
       icon: Award 
+    },
+    {
+      id: "pressroom",
+      label: "Pressroom Suite",
+      subtitle: "Cylinder Mechanics & Density",
+      icon: Gauge
     }
   ];
 
@@ -109,7 +116,7 @@ export default function InteractiveLab() {
         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#FF3E00]/5 to-transparent pointer-events-none select-none" />
 
         {/* Tab Buttons bar */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isSelected = activeTab === tab.id;
@@ -157,6 +164,7 @@ export default function InteractiveLab() {
               {activeTab === "prepress" && <PrepressStudio />}
               {activeTab === "postpress" && <PostPressLab />}
               {activeTab === "sandbox" && <InteractiveSandbox />}
+              {activeTab === "pressroom" && <PressroomSimulator />}
             </motion.div>
           </AnimatePresence>
         </div>

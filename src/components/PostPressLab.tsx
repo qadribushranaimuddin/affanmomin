@@ -39,7 +39,7 @@ export default function PostPressLab() {
               <span className="h-[1px] w-8 bg-brand-accent/40"></span>
             </div>
             
-            <h3 className="font-display text-4xl sm:text-5xl font-black uppercase tracking-tighter text-brand-text leading-none select-none">
+            <h3 className="font-display text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tighter text-brand-text leading-none select-none">
               3D DIE-CUT &<br />
               TACTILE FINISH LAB
             </h3>

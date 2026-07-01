@@ -415,16 +415,16 @@ export default function PortfolioShowcase() {
               className="bg-[#0D0D0D] border-2 border-[#FF3E00] text-white max-w-2xl w-full rounded-lg overflow-hidden flex flex-col"
             >
               {/* Header */}
-              <div className="flex justify-between items-center p-4 border-b border-[#222]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF3E00]"></span>
-                  <span className="text-xs font-mono tracking-widest text-[#A3A3A3] uppercase">
-                    Project Blueprint & Specifications
+              <div className="flex flex-row items-center justify-between gap-4 p-4 border-b border-[#222]">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-[#FF3E00] shrink-0 animate-pulse"></span>
+                  <span className="text-[10px] sm:text-xs font-mono tracking-widest text-[#A3A3A3] uppercase truncate">
+                    Specs Blueprint
                   </span>
                 </div>
                 <button
                   onClick={() => setActiveProject(null)}
-                  className="text-[#737373] hover:text-white font-mono text-xs uppercase border border-[#222] px-2.5 py-1 hover:border-[#FF3E00]"
+                  className="text-[#737373] hover:text-white font-mono text-[10px] sm:text-xs uppercase border border-[#222] px-2 py-0.5 sm:px-2.5 sm:py-1 hover:border-[#FF3E00] shrink-0"
                 >
                   [ Close ]
                 </button>
