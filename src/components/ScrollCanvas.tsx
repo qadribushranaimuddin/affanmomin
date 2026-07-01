@@ -177,11 +177,27 @@ function createBrushedMetalTexture() {
 // ==========================================
 function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const meshRef = useRef<THREE.Group>(null);
+  const debrisRef = useRef<THREE.Group>(null);
   const smoothProgressRef = useRef(0);
   const { viewport } = useThree();
-  const scale = Math.min(1.2, viewport.width / 4.8) * 0.9;
+  const scale = Math.min(1.2, viewport.width / 4.8) * 0.95;
 
-  useFrame(() => {
+  // Generate 45 scroll-reactive paper shards (debris)
+  const shards = useMemo(() => {
+    return Array.from({ length: 45 }).map((_, i) => ({
+      x: (Math.random() - 0.5) * 3.5,
+      y: (Math.random() - 0.5) * 3.5,
+      z: (Math.random() - 0.5) * 3.5,
+      rx: Math.random() * Math.PI,
+      ry: Math.random() * Math.PI,
+      rz: Math.random() * Math.PI,
+      size: 0.03 + Math.random() * 0.065,
+      color: i % 2 === 0 ? "#FF3E00" : theme === "dark" ? "#00ffcc" : "#0284c7",
+      speed: 0.15 + Math.random() * 0.25
+    }));
+  }, [theme]);
+
+  useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
     smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
@@ -201,6 +217,26 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
         }
       });
     }
+
+    // Swirl debris particles based on scroll speed
+    if (debrisRef.current) {
+      const speed = scrollSpeedRef.current * 18.0 + 0.15;
+      debrisRef.current.children.forEach((child, i) => {
+        const shard = shards[i];
+        child.position.y += Math.sin(state.clock.elapsedTime * shard.speed + i) * 0.005 * speed;
+        child.position.x += Math.cos(state.clock.elapsedTime * shard.speed + i) * 0.003 * speed;
+        child.rotation.x += 0.01 * speed;
+        child.rotation.y += 0.015 * speed;
+      });
+      const opacity = progress < 0.32 ? 1 : Math.max(0, 1 - (progress - 0.32) / 0.08);
+      debrisRef.current.visible = opacity > 0;
+      debrisRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
+          child.material.transparent = true;
+          child.material.opacity = opacity * 0.7;
+        }
+      });
+    }
   });
 
   const progress = smoothProgressRef.current;
@@ -210,60 +246,99 @@ function OrigamiBox({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
 
   const materialColor = "#FF3E00";
   const wireframeColor = theme === "dark" ? "#ffffff" : "#1a1a1a";
-  const labelColor = theme === "dark" ? "#888888" : "#555555";
   const opacity = progress < 0.32 ? 1 : Math.max(0, 1 - (progress - 0.32) / 0.08);
 
   const renderBoxPanels = () => (
     <>
+      {/* Front Face */}
       <mesh position={[0, 0, 0.5]}>
-        <boxGeometry args={[1, 1, 0.02]} />
-        <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
+        <boxGeometry args={[1, 1, 0.012]} />
+        <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} side={THREE.DoubleSide} clearcoat={0.3} />
       </mesh>
+      {/* Back Face */}
       <mesh position={[0, 0, -0.5]}>
-        <boxGeometry args={[1, 1, 0.02]} />
-        <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
+        <boxGeometry args={[1, 1, 0.012]} />
+        <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} side={THREE.DoubleSide} clearcoat={0.3} />
       </mesh>
+      
+      {/* Left Folding Flap */}
       <group position={[-0.5, 0, 0]} rotation={[0, -angle, 0]}>
         <mesh position={[-0.5, 0, 0]}>
-          <boxGeometry args={[1, 1, 0.02]} />
-          <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
+          <boxGeometry args={[1, 1, 0.012]} />
+          <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} side={THREE.DoubleSide} clearcoat={0.3} />
         </mesh>
+        {/* Hinge scoring guides */}
+        <Line points={[[-1, -0.5, 0.02], [-1, 0.5, 0.02]]} color="#00ffcc" lineWidth={1.5} dashed />
       </group>
+
+      {/* Right Folding Flap */}
       <group position={[0.5, 0, 0]} rotation={[0, angle, 0]}>
         <mesh position={[0.5, 0, 0]}>
-          <boxGeometry args={[1, 1, 0.02]} />
-          <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} />
+          <boxGeometry args={[1, 1, 0.012]} />
+          <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} side={THREE.DoubleSide} clearcoat={0.3} />
         </mesh>
+        <Line points={[[1, -0.5, 0.02], [1, 0.5, 0.02]]} color="#00ffcc" lineWidth={1.5} dashed />
+      </group>
+
+      {/* Top Folding Flap */}
+      <group position={[0, 0.5, 0]} rotation={[-angle, 0, 0]}>
+        <mesh position={[0, 0.5, 0]}>
+          <boxGeometry args={[1, 1, 0.012]} />
+          <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} side={THREE.DoubleSide} clearcoat={0.3} />
+        </mesh>
+        <Line points={[[-0.5, 1, 0.02], [0.5, 1, 0.02]]} color="#00ffcc" lineWidth={1.5} dashed />
+      </group>
+
+      {/* Bottom Folding Flap */}
+      <group position={[0, -0.5, 0]} rotation={[angle, 0, 0]}>
+        <mesh position={[0, -0.5, 0]}>
+          <boxGeometry args={[1, 1, 0.012]} />
+          <meshPhysicalMaterial color={materialColor} roughness={0.3} metalness={0.1} side={THREE.DoubleSide} clearcoat={0.3} />
+        </mesh>
+        <Line points={[[-0.5, -1, 0.02], [0.5, -1, 0.02]]} color="#00ffcc" lineWidth={1.5} dashed />
       </group>
     </>
   );
 
   return (
-    <group ref={meshRef} position={[0, 0, -2]} scale={[scale, scale, scale]}>
-      {speedSplit > 0.005 ? (
-        <>
-          <group position={[-speedSplit * 0.4, speedSplit * 0.4, 0]}>
-            <Line points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]} color="#06b6d4" lineWidth={1.5} />
-          </group>
-          <group position={[speedSplit * 0.4, -speedSplit * 0.4, 0]}>
-            <Line points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]} color="#ec4899" lineWidth={1.5} />
-          </group>
-          {renderBoxPanels()}
-        </>
-      ) : (
-        <>
-          {renderBoxPanels()}
-          <Line points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]} color={wireframeColor} lineWidth={1.5} />
-        </>
-      )}
+    <group>
+      {/* Floating Paper Shards Group */}
+      <group ref={debrisRef} position={[0, 0, -2]}>
+        {shards.map((sh, i) => (
+          <mesh key={i} position={[sh.x, sh.y, sh.z]} rotation={[sh.rx, sh.ry, sh.rz]}>
+            <boxGeometry args={[sh.size, sh.size, 0.002]} />
+            <meshBasicMaterial color={sh.color} transparent opacity={0.65} side={THREE.DoubleSide} />
+          </mesh>
+        ))}
+      </group>
 
-      {opacity > 0 && (
-        <group position={[0, 0, 0.515]}>
-          <Text fontSize={0.065} color="#ffffff" anchorX="center" anchorY="middle" transparent opacity={opacity * 0.95}>
-            MOMIN // SPEC
-          </Text>
-        </group>
-      )}
+      {/* Primary Folding Model Group */}
+      <group ref={meshRef} position={[0, 0, -2]} scale={[scale, scale, scale]}>
+        {speedSplit > 0.005 ? (
+          <>
+            <group position={[-speedSplit * 0.4, speedSplit * 0.4, 0]}>
+              <Line points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]} color="#06b6d4" lineWidth={1.5} />
+            </group>
+            <group position={[speedSplit * 0.4, -speedSplit * 0.4, 0]}>
+              <Line points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]} color="#ec4899" lineWidth={1.5} />
+            </group>
+            {renderBoxPanels()}
+          </>
+        ) : (
+          <>
+            {renderBoxPanels()}
+            <Line points={[[-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0]]} color={wireframeColor} lineWidth={1.5} />
+          </>
+        )}
+
+        {opacity > 0 && (
+          <group position={[0, 0, 0.515]}>
+            <Text fontSize={0.065} color="#ffffff" anchorX="center" anchorY="middle" transparent opacity={opacity * 0.95}>
+              MOMIN // SPEC
+            </Text>
+          </group>
+        )}
+      </group>
     </group>
   );
 }
@@ -555,7 +630,7 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
   const strokeColor = theme === "dark" ? "#00ff66" : "#059669";
   const labelColor = theme === "dark" ? "#888888" : "#444444";
   
-  // CRT Screen flickering value (Advanced Concept 1)
+  // CRT Screen flickering value
   const flicker = useMemo(() => Math.sin(Math.random() * Math.PI) * 0.03 + 0.97, []);
   
   // Indicator light states mapped to scroll sectors
@@ -563,59 +638,90 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
 
   const wavePoints = useMemo(() => {
     return Array.from({ length: 45 }).map((_, i) => {
-      const x = -2.2 + (i / 45) * 4.4;
-      return new THREE.Vector3(x, 0, 0);
+      const x = -2.0 + (i / 45) * 4.0;
+      return new THREE.Vector3(x, 0, 0.14);
     });
   }, []);
 
   useFrame((state) => {
     wavePoints.forEach((pt, i) => {
       const freq = 4.5 + scrollSpeedRef.current * 18;
-      pt.y = Math.sin(pt.x * freq + state.clock.elapsedTime * 9) * 0.32 * (1.2 - Math.abs(pt.x) / 2.2);
+      pt.y = Math.sin(pt.x * freq + state.clock.elapsedTime * 9) * 0.3 * (1.0 - Math.abs(pt.x) / 2.0);
     });
   });
 
   return (
     <group ref={panelRef} position={[0, 0, -2.5]}>
-      {/* Console frame grid backing */}
-      <Line points={[[-2.5, -1.8, 0], [2.5, -1.8, 0], [2.5, 1.8, 0], [-2.5, 1.8, 0], [-2.5, -1.8, 0]]} color={theme === "dark" ? "#333" : "#ccc"} lineWidth={2} />
-      
-      {/* Curved CRT Display boundary line */}
-      <Line points={[[-2.1, -0.9, -0.1], [2.1, -0.9, -0.1], [2.3, 0.9, -0.1], [-2.3, 0.9, -0.1], [-2.1, -0.9, -0.1]]} color={theme === "dark" ? "#222" : "#ddd"} lineWidth={1.5} />
+      {/* 1. Main 3D Monitor Casing (Cathode Ray Tube back box) */}
+      <mesh position={[0, 0, -0.6]}>
+        <boxGeometry args={[4.5, 3.0, 1.2]} />
+        <meshStandardMaterial color={theme === "dark" ? "#141414" : "#e5e7eb"} roughness={0.85} metalness={0.1} />
+      </mesh>
+
+      {/* 2. Ventilation Grill Slots on top of the chassis */}
+      {Array.from({ length: 12 }).map((_, i) => (
+        <mesh key={i} position={[-1.65 + i * 0.3, 1.48, -0.6]}>
+          <boxGeometry args={[0.08, 0.04, 0.7]} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
+        </mesh>
+      ))}
+
+      {/* 3. Screen Bezel Face Plate Frame */}
+      <mesh position={[0, 0, 0.025]}>
+        <boxGeometry args={[4.9, 3.4, 0.15]} />
+        <meshStandardMaterial color={theme === "dark" ? "#1d1d1f" : "#d1d5db"} roughness={0.7} metalness={0.25} />
+      </mesh>
+
+      {/* 4. Translucent 3D Curved Glass Dome Screen */}
+      <mesh position={[0, 0, 0.08]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[2.1, 2.1, 0.15, 32, 1, false, 0, Math.PI]} />
+        <meshPhysicalMaterial 
+          color={theme === "dark" ? "#062f1a" : "#ecfdf5"} 
+          roughness={0.1} 
+          metalness={0.2} 
+          transmission={0.4} 
+          thickness={0.5} 
+          transparent 
+          opacity={0.35}
+        />
+      </mesh>
+
+      {/* Console frame grid backing border */}
+      <Line points={[[-2.45, -1.7, 0.1], [2.45, -1.7, 0.1], [2.45, 1.7, 0.1], [-2.45, 1.7, 0.1], [-2.45, -1.7, 0.1]]} color={theme === "dark" ? "#333" : "#ccc"} lineWidth={1.5} />
       
       {/* Motherboard circuit pathway traces & glowing microchip */}
-      <group position={[0, 0, -0.15]}>
-        <Line points={[[-2.2, -1.3, 0], [-1.0, -1.3, 0], [-0.5, -0.8, 0], [0.5, -0.8, 0], [1.0, -1.3, 0], [2.2, -1.3, 0]]} color={theme === "dark" ? "#113322" : "#ccffdd"} lineWidth={1} transparent opacity={0.6} />
-        <Line points={[[-1.5, 0.8, 0], [-0.8, 0.2, 0], [0.8, 0.2, 0], [1.5, 0.8, 0]]} color={theme === "dark" ? "#113322" : "#ccffdd"} lineWidth={1} transparent opacity={0.6} />
-        <mesh position={[0, -0.8, 0.01]}>
+      <group position={[0, 0, -0.05]}>
+        <Line points={[[-2.2, -1.3, 0.11], [-1.0, -1.3, 0.11], [-0.5, -0.8, 0.11], [0.5, -0.8, 0.11], [1.0, -1.3, 0.11], [2.2, -1.3, 0.11]]} color={theme === "dark" ? "#113322" : "#ccffdd"} lineWidth={1} transparent opacity={0.6} />
+        <Line points={[[-1.5, 0.8, 0.11], [-0.8, 0.2, 0.11], [0.8, 0.2, 0.11], [1.5, 0.8, 0.11]]} color={theme === "dark" ? "#113322" : "#ccffdd"} lineWidth={1} transparent opacity={0.6} />
+        <mesh position={[0, -0.8, 0.12]}>
           <boxGeometry args={[0.3, 0.18, 0.05]} />
           <meshBasicMaterial color="#FF3E00" />
         </mesh>
       </group>
 
       {/* Falling binary matrix background streams */}
-      <CRTTextStream position={[-1.8, 0.7, -0.12]} color={strokeColor} />
-      <CRTTextStream position={[-1.0, 0.5, -0.12]} color={strokeColor} />
-      <CRTTextStream position={[0.6, 0.8, -0.12]} color={strokeColor} />
-      <CRTTextStream position={[1.4, 0.6, -0.12]} color={strokeColor} />
+      <CRTTextStream position={[-1.7, 0.7, 0.12]} color={strokeColor} />
+      <CRTTextStream position={[-0.9, 0.5, 0.12]} color={strokeColor} />
+      <CRTTextStream position={[0.7, 0.8, 0.12]} color={strokeColor} />
+      <CRTTextStream position={[1.5, 0.6, 0.12]} color={strokeColor} />
 
-      {/* Rotating industrial system gears */}
-      <Gear position={[-2.3, 1.4, -0.05]} size={0.15} speed={1.2} color={strokeColor} />
-      <Gear position={[2.3, 1.4, -0.05]} size={0.15} speed={-1.2} color={strokeColor} />
+      {/* Rotating industrial system gears on Bezel ears */}
+      <Gear position={[-2.2, 1.4, 0.11]} size={0.15} speed={1.2} color={strokeColor} />
+      <Gear position={[2.2, 1.4, 0.11]} size={0.15} speed={-1.2} color={strokeColor} />
 
-      {/* Oscilloscope Waveform */}
+      {/* Oscilloscope Waveform inside screen */}
       <Line points={wavePoints} color={strokeColor} lineWidth={2.5} transparent opacity={flicker} />
       
       {/* Dynamic Telemetry CRT Printout */}
-      <Text position={[-2.2, 1.4, 0]} fontSize={0.08} color={strokeColor} anchorX="left" transparent opacity={flicker}>
+      <Text position={[-2.1, 1.38, 0.12]} fontSize={0.08} color={strokeColor} anchorX="left" transparent opacity={flicker}>
         {`STATUS: ONLINE // LOADING TIMELINE...`}
       </Text>
-      <Text position={[-2.2, 1.25, 0]} fontSize={0.065} color={labelColor} anchorX="left">
+      <Text position={[-2.1, 1.23, 0.12]} fontSize={0.065} color={labelColor} anchorX="left">
         {`CRT SCAN RATE: 60Hz // IPH: ${(progress * 15000 + 4000).toFixed(0)}`}
       </Text>
 
-      {/* Advanced Concept 1: Indicator Bulbs that light up based on progress */}
-      <group position={[0.2, 1.35, 0]}>
+      {/* Indicator Bulbs that light up based on progress */}
+      <group position={[0.2, 1.33, 0.12]}>
         <mesh position={[-0.4, 0, 0]}>
           <sphereGeometry args={[0.08, 16, 16]} />
           <meshBasicMaterial color={activeSector === 0 ? "#ff9900" : "#332200"} />
@@ -635,35 +741,35 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
         <Text position={[0.4, -0.18, 0]} fontSize={0.045} color={labelColor}>WORK</Text>
       </group>
 
-      {/* Concept 1: Mechanical Toggle Switches that flip on scroll */}
-      <group position={[-1.6, -1.3, 0]}>
+      {/* Mechanical Toggle Switches that flip on scroll */}
+      <group position={[-1.6, -1.3, 0.12]}>
         {/* Toggle switch 1 */}
         <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[0.2, 0.2, 0.1]} />
-          <meshStandardMaterial color="#444" />
+          <boxGeometry args={[0.2, 0.2, 0.08]} />
+          <meshStandardMaterial color="#444" roughness={0.4} />
         </mesh>
-        <mesh position={[0, 0, 0.1]} rotation={[activeSector > 0 ? 0.5 : -0.5, 0, 0]}>
-          <cylinderGeometry args={[0.02, 0.02, 0.3]} />
-          <meshStandardMaterial color="#ff3e00" metalness={0.9} />
+        <mesh position={[0, 0, 0.08]} rotation={[activeSector > 0 ? 0.5 : -0.5, 0, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 0.25]} />
+          <meshStandardMaterial color="#ff3e00" metalness={0.95} roughness={0.1} />
         </mesh>
         <Text position={[0, -0.25, 0]} fontSize={0.05} color={labelColor}>SYS_A</Text>
       </group>
 
-      <group position={[-1.1, -1.3, 0]}>
+      <group position={[-1.1, -1.3, 0.12]}>
         {/* Toggle switch 2 */}
         <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[0.2, 0.2, 0.1]} />
-          <meshStandardMaterial color="#444" />
+          <boxGeometry args={[0.2, 0.2, 0.08]} />
+          <meshStandardMaterial color="#444" roughness={0.4} />
         </mesh>
-        <mesh position={[0, 0, 0.1]} rotation={[activeSector > 1 ? 0.5 : -0.5, 0, 0]}>
-          <cylinderGeometry args={[0.02, 0.02, 0.3]} />
-          <meshStandardMaterial color="#ff3e00" metalness={0.9} />
+        <mesh position={[0, 0, 0.08]} rotation={[activeSector > 1 ? 0.5 : -0.5, 0, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 0.25]} />
+          <meshStandardMaterial color="#ff3e00" metalness={0.95} roughness={0.1} />
         </mesh>
         <Text position={[0, -0.25, 0]} fontSize={0.05} color={labelColor}>SYS_B</Text>
       </group>
 
       {/* Rotating control dials */}
-      <group position={[1.4, -1.3, 0]}>
+      <group position={[1.4, -1.3, 0.12]}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.2, 0.2, 0.1, 16]} />
           <meshStandardMaterial color={theme === "dark" ? "#1a1a1a" : "#dddddd"} metalness={0.9} roughness={0.1} />
@@ -680,6 +786,7 @@ function ConsoleScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) 
 // ==========================================
 function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
   const roadRef = useRef<THREE.Group>(null);
+  const tunnelRef = useRef<THREE.Mesh>(null);
   const smoothProgressRef = useRef(0);
   const { camera } = useThree();
   const lookTargetRef = useRef<THREE.Vector3 | null>(null);
@@ -695,7 +802,19 @@ function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
     return pts;
   }, []);
 
-  useFrame(() => {
+  // Generate hovercars flying along the lanes
+  const hovercars = useMemo(() => {
+    return Array.from({ length: 6 }).map((_, i) => ({
+      lane: i % 3, // left, center, right
+      speed: 0.18 + Math.random() * 0.15,
+      offsetZ: -Math.random() * 60,
+      color: i % 2 === 0 ? "#FF3E00" : "#00ffcc"
+    }));
+  }, []);
+
+  const hovercarRefs = useRef<THREE.Group[]>([]);
+
+  useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
     smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.025);
@@ -722,6 +841,32 @@ function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
       lookTargetRef.current.z = THREE.MathUtils.lerp(lookTargetRef.current.z, lookTargetZ, 0.03);
     }
     camera.lookAt(lookTargetRef.current);
+
+    // Rotate the hexagonal tunnel
+    if (tunnelRef.current) {
+      tunnelRef.current.rotation.z = state.clock.getElapsedTime() * 0.08;
+      tunnelRef.current.position.set(targetX, targetY, camera.position.z - 20);
+    }
+
+    // Move hovercars forward along spline points
+    hovercars.forEach((car, i) => {
+      const group = hovercarRefs.current[i];
+      if (group) {
+        // Move car along Z
+        car.offsetZ += car.speed;
+        if (car.offsetZ > 10) car.offsetZ = -70;
+
+        const currentZ = camera.position.z + car.offsetZ;
+        const ptIndex = Math.max(0, Math.min(splinePoints.length - 1, Math.round(Math.abs(currentZ) / 1.25)));
+        const splinePt = splinePoints[ptIndex];
+
+        let offsetLaneX = 0;
+        if (car.lane === 0) offsetLaneX = -0.75;
+        if (car.lane === 2) offsetLaneX = 0.75;
+
+        group.position.set(splinePt.x + offsetLaneX, splinePt.y - 0.18, splinePt.z);
+      }
+    });
   });
 
   const lineColor = theme === "dark" ? "#00ffff" : "#0284c7";
@@ -740,24 +885,59 @@ function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
       {/* Light speed warp streaks */}
       <LightStreaks theme={theme} />
 
-      {/* Cyberpunk wireframe city buildings flanking road */}
+      {/* Rotating Hexagonal tunnel grid (Concept 2 Upgrade) */}
+      <mesh ref={tunnelRef} rotation={[0, 0, 0]}>
+        <cylinderGeometry args={[4.2, 4.2, 90, 6, 12, true]} />
+        <meshBasicMaterial 
+          color={theme === "dark" ? "#1e1b4b" : "#cbd5e1"} 
+          wireframe 
+          transparent 
+          opacity={0.08} 
+        />
+      </mesh>
+
+      {/* Cyberpunk wireframe city buildings flanking road with glowing windows */}
       {Array.from({ length: 12 }).map((_, i) => {
         const sideZ = -5 - i * 8;
         const pathPt = splinePoints.find(p => p.z <= sideZ) || splinePoints[0];
         const height = 1.8 + Math.sin(i * 1.7) * 1.4;
         const leftX = pathPt.x - 3.4;
         const rightX = pathPt.x + 3.4;
+        
         return (
           <group key={i}>
             {/* Left Skyscraper */}
             <mesh position={[leftX, pathPt.y - 0.7 + height / 2, sideZ]}>
-              <boxGeometry args={[0.8, height, 0.8]} />
-              <meshBasicMaterial color={theme === "dark" ? "#1e1b4b" : "#cbd5e1"} wireframe />
+              <boxGeometry args={[0.9, height, 0.9]} />
+              <meshStandardMaterial 
+                color={theme === "dark" ? "#0f172a" : "#cbd5e1"} 
+                roughness={0.7} 
+                metalness={0.2}
+                emissive={theme === "dark" ? "#06b6d4" : "#FF3E00"}
+                emissiveIntensity={0.08}
+              />
             </mesh>
+            {/* Left Building windows wireframe */}
+            <mesh position={[leftX, pathPt.y - 0.7 + height / 2, sideZ]}>
+              <boxGeometry args={[0.92, height * 1.01, 0.92]} />
+              <meshBasicMaterial color={theme === "dark" ? "#334155" : "#94a3b8"} wireframe />
+            </mesh>
+
             {/* Right Skyscraper */}
             <mesh position={[rightX, pathPt.y - 0.7 + height / 2, sideZ]}>
-              <boxGeometry args={[0.8, height, 0.8]} />
-              <meshBasicMaterial color={theme === "dark" ? "#1e1b4b" : "#cbd5e1"} wireframe />
+              <boxGeometry args={[0.9, height, 0.9]} />
+              <meshStandardMaterial 
+                color={theme === "dark" ? "#0f172a" : "#cbd5e1"} 
+                roughness={0.7} 
+                metalness={0.2}
+                emissive={theme === "dark" ? "#ec4899" : "#FF3E00"}
+                emissiveIntensity={0.08}
+              />
+            </mesh>
+            {/* Right Building windows wireframe */}
+            <mesh position={[rightX, pathPt.y - 0.7 + height / 2, sideZ]}>
+              <boxGeometry args={[0.92, height * 1.01, 0.92]} />
+              <meshBasicMaterial color={theme === "dark" ? "#334155" : "#94a3b8"} wireframe />
             </mesh>
           </group>
         );
@@ -768,6 +948,24 @@ function SplineHighwayScene({ scrollProgressRef, theme }: SceneProps) {
       <Line points={splinePoints.map(p => new THREE.Vector3(p.x - 0.75, p.y - 0.25, p.z))} color="#FF3E00" lineWidth={1.5} />
       <Line points={splinePoints.map(p => new THREE.Vector3(p.x + 0.75, p.y - 0.25, p.z))} color="#FF3E00" lineWidth={1.5} />
       
+      {/* Neon Hovercars with light trails */}
+      {hovercars.map((car, idx) => (
+        <group key={idx} ref={(el) => { if (el) hovercarRefs.current[idx] = el; }}>
+          <mesh>
+            <boxGeometry args={[0.18, 0.08, 0.35]} />
+            <meshBasicMaterial color={car.color} />
+          </mesh>
+          {/* Light trails */}
+          <Line 
+            points={[[0, 0, 0.15], [0, 0, 0.8]]} 
+            color={car.color} 
+            lineWidth={1.5} 
+            transparent 
+            opacity={0.6} 
+          />
+        </group>
+      ))}
+
       {/* Neon Vector square gates */}
       {Array.from({ length: 15 }).map((_, i) => {
         const step = i * 6;
@@ -840,7 +1038,8 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
       modelRef.current.rotation.x = 0.35 + progress * 0.25;
     }
     if (compassRef.current) {
-      compassRef.current.rotation.y = state.clock.getElapsedTime() * 0.5;
+      // Mechanical arm sweep back and forth
+      compassRef.current.rotation.z = Math.sin(state.clock.getElapsedTime() * 1.5) * 0.25;
     }
   });
 
@@ -848,88 +1047,126 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
   const blueprintColor = theme === "dark" ? "#0066ff" : "#1d4ed8";
   const gridColor = theme === "dark" ? "#1a1a2e" : "#e0e7ff";
 
-  // Auto-drawing lines animation factor based on scroll progress (Concept 3 Upgrade)
+  // Auto-drawing lines animation factor based on scroll progress
   const drawLimit = Math.max(0.01, progress * 1.5);
+  const explode = Math.max(0, (progress - 0.45) * 1.6);
 
   return (
     <group ref={modelRef} scale={[scale, scale, scale]} position={[0, 0, -2.5]}>
-      <gridHelper args={[8, 16, blueprintColor, gridColor]} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -1]} />
+      {/* 1. Large blueprint drafting grid */}
+      <gridHelper args={[10, 20, blueprintColor, gridColor]} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -1.2]} />
 
-      {/* Rotating mechanical compass caliper tool on the side */}
-      <group ref={compassRef} position={[-2.3, 1.2, -0.5]}>
+      {/* 2. Rotating detailed mechanical compass caliper tool */}
+      <group ref={compassRef} position={[-2.3, 1.3, -0.25]}>
+        {/* Main hinge */}
         <mesh>
-          <cylinderGeometry args={[0.015, 0.015, 0.8, 8]} />
+          <sphereGeometry args={[0.08, 16, 16]} />
           <meshBasicMaterial color={blueprintColor} wireframe />
         </mesh>
-        <mesh position={[-0.15, -0.3, 0]} rotation={[0, 0, 0.35]}>
-          <cylinderGeometry args={[0.01, 0.01, 0.6, 8]} />
-          <meshBasicMaterial color={blueprintColor} wireframe />
-        </mesh>
-        <mesh position={[0.15, -0.3, 0]} rotation={[0, 0, -0.35]}>
-          <cylinderGeometry args={[0.01, 0.01, 0.6, 8]} />
-          <meshBasicMaterial color={blueprintColor} wireframe />
-        </mesh>
-        <Text position={[0, 0.5, 0]} fontSize={0.065} color={blueprintColor}>
-          CAD_TOOL: COMPASS
+        {/* Left leg */}
+        <group rotation={[0, 0, 0.25]}>
+          <mesh position={[0, -0.4, 0]}>
+            <cylinderGeometry args={[0.015, 0.008, 0.8, 8]} />
+            <meshBasicMaterial color={blueprintColor} wireframe />
+          </mesh>
+        </group>
+        {/* Right leg */}
+        <group rotation={[0, 0, -0.25]}>
+          <mesh position={[0, -0.4, 0]}>
+            <cylinderGeometry args={[0.015, 0.008, 0.8, 8]} />
+            <meshBasicMaterial color={blueprintColor} wireframe />
+          </mesh>
+        </group>
+        <Text position={[0, 0.15, 0]} fontSize={0.06} color={blueprintColor}>
+          COMPASS_DIVIDER_ARM
         </Text>
       </group>
 
-      <group position={[0, -0.3, 0]}>
-        {/* Exploded parts assembly animation */}
-        {(() => {
-          const explode = Math.max(0, (progress - 0.5) * 1.8);
-          return (
-            <>
-              {/* Motherboard/Chassis exploded guide lines */}
-              {explode > 0.02 && (
-                <>
-                  <Line points={[[-1.2, -explode * 0.4, 0.6], [-1.2, explode * 0.5, -explode * 0.3]]} color="#FF3E00" lineWidth={1} dashed />
-                  <Line points={[[1.2, -explode * 0.4, 0.6], [1.2, explode * 0.5, -explode * 0.3]]} color="#FF3E00" lineWidth={1} dashed />
-                </>
-              )}
+      {/* 3. Detailed Exploded watch/gear schematic assembly */}
+      <group position={[0, 0, 0]}>
+        
+        {/* Outer casing ring */}
+        {drawLimit > 0.1 && (
+          <group position={[0, 0, -explode * 0.8]}>
+            <mesh>
+              <ringGeometry args={[1.5, 1.6, 64]} />
+              <meshBasicMaterial color={blueprintColor} transparent opacity={0.4} />
+            </mesh>
+            <mesh>
+              <ringGeometry args={[1.35, 1.37, 64]} />
+              <meshBasicMaterial color={blueprintColor} transparent opacity={0.3} />
+            </mesh>
+            <Text position={[0, 1.7, 0]} fontSize={0.05} color={blueprintColor}>OUTER_HOUSING</Text>
+          </group>
+        )}
 
-              {/* Base Chassis Group */}
-              <group position={[0, -explode * 0.4, 0]}>
-                {drawLimit > 0.15 && (
-                  <Line points={[[-1.4, 0, 0], [-1.4, 0, 1.2], [1.4, 0, 1.2], [1.4, 0, 0], [-1.4, 0, 0]]} color={blueprintColor} lineWidth={2.5} />
-                )}
-              </group>
+        {/* Major gear wheel A (center) */}
+        {drawLimit > 0.3 && (
+          <group position={[0, 0, 0]} rotation={[0, 0, progress * Math.PI * 3.2]}>
+            <mesh>
+              <ringGeometry args={[0.8, 0.95, 32]} />
+              <meshBasicMaterial color={blueprintColor} />
+            </mesh>
+            {/* Gear teeth */}
+            {Array.from({ length: 16 }).map((_, i) => (
+              <mesh key={i} rotation={[0, 0, (i * Math.PI) / 8]} position={[0, 0, 0]}>
+                <boxGeometry args={[0.08, 2.0, 0.01]} />
+                <meshBasicMaterial color={blueprintColor} />
+              </mesh>
+            ))}
+          </group>
+        )}
 
-              {/* Screen Bezel Group */}
-              <group position={[0, explode * 0.5, -explode * 0.3]}>
-                {drawLimit > 0.45 && (
-                  <Line points={[[-1.2, 0, 0], [-1.2, 1.2, 0], [1.2, 1.2, 0], [1.2, 0, 0], [-1.2, 0, 0]]} color={blueprintColor} lineWidth={2} rotation={[-0.45, 0, 0]} />
-                )}
-              </group>
-            </>
-          );
-        })()}
+        {/* Secondary gear wheel B (offset exploded) */}
+        {drawLimit > 0.5 && (
+          <group position={[0.7, 0.7, explode * 0.6]} rotation={[0, 0, -progress * Math.PI * 4.8]}>
+            <mesh>
+              <ringGeometry args={[0.4, 0.5, 24]} />
+              <meshBasicMaterial color={blueprintColor} />
+            </mesh>
+            {Array.from({ length: 12 }).map((_, i) => (
+              <mesh key={i} rotation={[0, 0, (i * Math.PI) / 6]}>
+                <boxGeometry args={[0.06, 1.06, 0.01]} />
+                <meshBasicMaterial color={blueprintColor} />
+              </mesh>
+            ))}
+            <Text position={[0, 0.65, 0]} fontSize={0.045} color={blueprintColor}>GEAR_SUB_B</Text>
+          </group>
+        )}
+
+        {/* Explode guide projection lines */}
+        {explode > 0.05 && (
+          <>
+            <Line points={[[0, 0, -explode * 0.8], [0, 0, explode * 0.6]]} color="#FF3E00" lineWidth={1} dashed />
+            <Line points={[[0.7, 0.7, 0], [0.7, 0.7, explode * 0.6]]} color="#FF3E00" lineWidth={1} dashed />
+          </>
+        )}
 
         {/* Blueprint Drafting Dimensions W: 340mm */}
-        {drawLimit > 0.3 && (
-          <group position={[0, -0.15, 1.25]}>
-            <Line points={[[-1.4, 0, 0], [-1.4, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
-            <Line points={[[1.4, 0, 0], [1.4, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
-            <Line points={[[-1.4, 0.1, 0], [1.4, 0.1, 0]]} color={blueprintColor} lineWidth={1.5} />
-            <Text position={[0, 0.22, 0]} fontSize={0.055} color={blueprintColor} anchorX="center">
+        {drawLimit > 0.4 && (
+          <group position={[0, -1.8, 0.1]}>
+            <Line points={[[-1.6, 0, 0], [-1.6, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
+            <Line points={[[1.6, 0, 0], [1.6, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
+            <Line points={[[-1.6, 0.08, 0], [1.6, 0.08, 0]]} color={blueprintColor} lineWidth={1.5} />
+            <Text position={[0, 0.18, 0]} fontSize={0.055} color={blueprintColor} anchorX="center">
               W: 340.00mm
             </Text>
           </group>
         )}
 
         {/* Blueprint Drafting Dimensions H: 220mm */}
-        {drawLimit > 0.6 && (
-          <group position={[-1.45, 0.6, 0.1]} rotation={[0, 0, Math.PI / 2]}>
+        {drawLimit > 0.65 && (
+          <group position={[-1.7, 0.5, 0.1]} rotation={[0, 0, Math.PI / 2]}>
             <Line points={[[-0.6, 0, 0], [-0.6, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
             <Line points={[[0.6, 0, 0], [0.6, 0.15, 0]]} color={blueprintColor} lineWidth={1} />
-            <Line points={[[-0.6, 0.1, 0], [0.6, 0.1, 0]]} color={blueprintColor} lineWidth={1.5} />
-            <Text position={[0, 0.22, 0]} fontSize={0.055} color={blueprintColor} anchorX="center" rotation={[0, 0, -Math.PI / 2]}>
+            <Line points={[[-0.6, 0.08, 0], [0.6, 0.08, 0]]} color={blueprintColor} lineWidth={1.5} />
+            <Text position={[0, 0.18, 0]} fontSize={0.055} color={blueprintColor} anchorX="center" rotation={[0, 0, -Math.PI / 2]}>
               H: 220.00mm
             </Text>
           </group>
         )}
         
-        {/* Interactive Caliper lines tracking cursor coordinate (Concept 3 Upgrade) */}
+        {/* Interactive Caliper lines tracking cursor coordinate */}
         <group position={[pointer.x * 1.2, 0.05, pointer.y * 0.8]}>
           <mesh>
             <sphereGeometry args={[0.04, 8, 8]} />
@@ -942,10 +1179,10 @@ function BlueprintScene({ scrollProgressRef, theme }: SceneProps) {
         </group>
 
         {/* Blueprint coordinate readouts */}
-        <Text position={[1.7, 0.4, 0]} fontSize={0.06} color={blueprintColor} anchorX="left">
+        <Text position={[1.7, 0.4, 0.1]} fontSize={0.06} color={blueprintColor} anchorX="left">
           {`DRAW_PASS: ${Math.round(Math.min(1, drawLimit) * 100)}%`}
         </Text>
-        <Text position={[1.7, 0.2, 0]} fontSize={0.06} color={blueprintColor} anchorX="left">
+        <Text position={[1.7, 0.2, 0.1]} fontSize={0.06} color={blueprintColor} anchorX="left">
           {`FOCAL_Z: -2.5m`}
         </Text>
       </group>
@@ -962,64 +1199,91 @@ function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProp
   const { viewport } = useThree();
   const scale = Math.min(1.0, viewport.width / 5.2) * 0.95;
 
-  const particleChars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ[]{}#@$*MOMINDESIGNDEVELOP";
+  const particleChars = "MOMINAFFANDESIGNPRINTCREATIVECMYKVECTOR";
+  
+  // Arrange letters in a helical cylindrical vortex (Concepts 4 Upgrade)
   const bgLetters = useMemo(() => {
-    return Array.from({ length: 90 }).map((_, i) => {
-      const u = Math.random();
-      const v = Math.random();
-      const theta = u * 2.0 * Math.PI;
-      const phi = Math.acos(2.0 * v - 1.0);
-      const r = 1.0 + Math.random() * 3.5;
+    return Array.from({ length: 110 }).map((_, i) => {
+      const theta = (i / 110) * Math.PI * 18; // helical spirals
+      const y = -2.0 + (i / 110) * 4.0;
+      const radius = 0.55 + Math.random() * 0.95;
       
       return {
-        char: particleChars[Math.floor(Math.random() * particleChars.length)],
-        x: r * Math.sin(phi) * Math.cos(theta),
-        y: r * Math.sin(phi) * Math.sin(theta),
-        z: r * Math.cos(phi),
-        speed: 0.1 + Math.random() * 0.2
+        char: particleChars[i % particleChars.length],
+        origRadius: radius,
+        theta,
+        y,
+        speed: 0.15 + Math.random() * 0.3
       };
     });
   }, []);
 
-  useFrame(() => {
+  const letterRefs = useRef<THREE.Group[]>([]);
+
+  useFrame((state) => {
     const target = scrollProgressRef.current;
     const current = smoothProgressRef.current;
     smoothProgressRef.current = THREE.MathUtils.lerp(current, target, 0.035);
     const progress = smoothProgressRef.current;
 
+    const drift = scrollSpeedRef.current * 18.0;
+    const time = state.clock.getElapsedTime();
+
     if (groupRef.current) {
-      groupRef.current.rotation.y = progress * Math.PI * 0.8;
-      groupRef.current.rotation.x = Math.sin(progress * 0.5) * 0.15;
+      groupRef.current.rotation.y = time * 0.18 + progress * Math.PI * 0.8;
+      groupRef.current.rotation.x = Math.sin(time * 0.35) * 0.08;
     }
+
+    // Animate letters individually along helical paths with scroll expansion
+    bgLetters.forEach((l, idx) => {
+      const child = letterRefs.current[idx];
+      if (child) {
+        const currentTheta = l.theta + time * l.speed + progress * Math.PI * 1.5;
+        // Expand radius when scrolling fast (disintegration effect)
+        const currentRadius = l.origRadius * (1.0 + drift * 1.1);
+        
+        child.position.x = Math.cos(currentTheta) * currentRadius;
+        child.position.z = Math.sin(currentTheta) * currentRadius;
+        child.rotation.y = -currentTheta + Math.PI / 2;
+      }
+    });
   });
 
-  const progress = smoothProgressRef.current;
   const textColor = theme === "dark" ? "#ffffff" : "#111111";
-  const drift = scrollSpeedRef.current * 16.0;
 
   return (
     <group ref={groupRef} scale={[scale, scale, scale]} position={[0, 0, -2.8]}>
-      {/* Massive Typographical Letter Sphere */}
-      {bgLetters.map((p, i) => {
-        const factor = 1.0 + drift * 0.6;
+      {/* 1. Helical Typography Vortex */}
+      {bgLetters.map((p, i) => (
+        <group key={i} ref={(el) => { if (el) letterRefs.current[i] = el; }} position={[0, p.y, 0]}>
+          <Text fontSize={0.14} color={textColor} transparent opacity={0.25}>
+            {p.char}
+          </Text>
+        </group>
+      ))}
+
+      {/* 2. Floating dust/particle grid */}
+      {Array.from({ length: 25 }).map((_, i) => {
+        const x = (Math.random() - 0.5) * 3;
+        const y = (Math.random() - 0.5) * 3;
+        const z = (Math.random() - 0.5) * 3;
         return (
-          <group key={i} position={[p.x * factor, p.y * factor, p.z * factor]}>
-            <Text fontSize={0.14} color={textColor} transparent opacity={0.22}>
-              {p.char}
-            </Text>
-          </group>
+          <mesh key={i} position={[x, y, z]}>
+            <sphereGeometry args={[0.015, 4, 4]} />
+            <meshBasicMaterial color={theme === "dark" ? "#00ffcc" : "#FF3E00"} transparent opacity={0.3} />
+          </mesh>
         );
       })}
 
       {/* Main typographic structural headers */}
-      <group position={[0, 0.8, 0]}>
-        <Text fontSize={0.65} color={textColor}>MOMIN</Text>
+      <group position={[0, 0.9, 0.2]}>
+        <Text fontSize={0.65} color={textColor} fontWeight="bold">MOMIN</Text>
       </group>
-      <group position={[0, 0, 0.8]}>
-        <Text fontSize={0.48} color="#FF3E00">DESIGN</Text>
+      <group position={[0, 0, 0.9]}>
+        <Text fontSize={0.48} color="#FF3E00" fontWeight="bold">DESIGN</Text>
       </group>
-      <group position={[0, -0.8, 1.4]}>
-        <Text fontSize={0.48} color={theme === "dark" ? "#00ffcc" : "#0d9488"}>DEVELOP</Text>
+      <group position={[0, -0.9, 1.4]}>
+        <Text fontSize={0.48} color={theme === "dark" ? "#00ffcc" : "#0d9488"} fontWeight="bold">DEVELOP</Text>
       </group>
     </group>
   );
@@ -1029,11 +1293,12 @@ function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProp
 // CONCEPT 5: Holographic Core (Transformers Unfolding core & Orbital project rings)
 // ==========================================
 function HologramScene({ scrollProgressRef, theme }: SceneProps) {
-  const coreRef = useRef<THREE.Mesh>(null);
+  const coreRef = useRef<THREE.Group>(null);
   const meshTopRef = useRef<THREE.Mesh>(null);
   const meshBottomRef = useRef<THREE.Mesh>(null);
   const ring1Ref = useRef<THREE.Group>(null);
   const ring2Ref = useRef<THREE.Group>(null);
+  const baseRingsRef = useRef<THREE.Group>(null);
   
   const smoothProgressRef = useRef(0);
   const { viewport } = useThree();
@@ -1058,6 +1323,7 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
 
     if (coreRef.current) {
       coreRef.current.rotation.y = -state.clock.getElapsedTime() * 2.5;
+      coreRef.current.rotation.x = state.clock.getElapsedTime() * 1.2;
       coreRef.current.scale.setScalar(0.25 + Math.sin(state.clock.getElapsedTime() * 4) * 0.05);
     }
 
@@ -1068,6 +1334,12 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
     }
     if (ring2Ref.current) {
       ring2Ref.current.rotation.z = -state.clock.getElapsedTime() * 0.35 * spinSpeed;
+    }
+
+    // Rotate emitter base ring rings
+    if (baseRingsRef.current) {
+      baseRingsRef.current.children[0].rotation.y = state.clock.getElapsedTime() * 0.8;
+      baseRingsRef.current.children[1].rotation.y = -state.clock.getElapsedTime() * 1.2;
     }
   });
 
@@ -1082,21 +1354,41 @@ function HologramScene({ scrollProgressRef, theme }: SceneProps) {
         <meshBasicMaterial color={theme === "dark" ? "#00ffcc" : "#FF3E00"} wireframe transparent opacity={0.12} />
       </mesh>
 
-      {/* Hologram Pedestal Base Emitter */}
+      {/* Hologram Pedestal Base Emitter Chamber (Concept 5 Upgrade) */}
       <group position={[0, -1.8, 0]}>
+        {/* Main metallic deck */}
         <mesh>
-          <cylinderGeometry args={[1.0, 1.2, 0.15, 32]} />
-          <meshStandardMaterial color={theme === "dark" ? "#111111" : "#eeeeee"} roughness={0.2} metalness={0.9} />
+          <cylinderGeometry args={[1.0, 1.2, 0.18, 32]} />
+          <meshStandardMaterial color={theme === "dark" ? "#18181b" : "#f4f4f5"} roughness={0.15} metalness={0.9} />
         </mesh>
-        <mesh position={[0, 0.08, 0]}>
-          <cylinderGeometry args={[0.9, 0.9, 0.02, 32]} />
+        {/* Sub-emitter glass ring */}
+        <mesh position={[0, 0.09, 0]}>
+          <cylinderGeometry args={[0.9, 0.9, 0.03, 32]} />
           <meshBasicMaterial color="#00ffcc" />
         </mesh>
+
+        {/* Nested spinning mechanical collars (Base rings) */}
+        <group ref={baseRingsRef} position={[0, 0.11, 0]}>
+          <mesh>
+            <torusGeometry args={[0.78, 0.025, 8, 32]} rotation={[Math.PI / 2, 0, 0]} />
+            <meshStandardMaterial color="#FF3E00" metalness={0.8} />
+          </mesh>
+          <mesh>
+            <torusGeometry args={[0.62, 0.02, 8, 32]} rotation={[Math.PI / 2, 0, 0]} />
+            <meshStandardMaterial color="#00ffcc" metalness={0.8} />
+          </mesh>
+        </group>
       </group>
 
+      {/* Volumetric Projection Beam Cones */}
+      <mesh position={[0, -0.6, 0]}>
+        <cylinderGeometry args={[0.65, 0.01, 2.4, 32, 1, true]} />
+        <meshBasicMaterial color="#00ffcc" transparent opacity={0.06} side={THREE.DoubleSide} />
+      </mesh>
+
       {/* Projection Beam Guide Lines */}
-      <Line points={[[0, -1.8, 0], [-0.65, 0, 0]]} color="#00ffcc" lineWidth={1} transparent opacity={0.35} />
-      <Line points={[[0, -1.8, 0], [0.65, 0, 0]]} color="#00ffcc" lineWidth={1} transparent opacity={0.35} />
+      <Line points={[[0, -1.8, 0], [-0.65, 0, 0]]} color="#00ffcc" lineWidth={1.2} transparent opacity={0.35} />
+      <Line points={[[0, -1.8, 0], [0.65, 0, 0]]} color="#00ffcc" lineWidth={1.2} transparent opacity={0.35} />
       <Line points={[[0, -1.8, 0], [0, 1.2, 0]]} color="#00ffcc" lineWidth={0.7} transparent opacity={0.2} />
 
       {/* Rising beam energy particles */}
@@ -1262,7 +1554,7 @@ function GalaxyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
   const { viewport, pointer } = useThree();
   const scale = Math.min(1.0, viewport.width / 4.8) * 0.95;
 
-  const starCount = 500;
+  const starCount = 1200;
   const stars = useMemo(() => {
     const particleColors = theme === "dark" 
       ? ["#00ffcc", "#06b6d4", "#9333ea", "#3b82f6"] 
@@ -1270,13 +1562,14 @@ function GalaxyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
       
     return Array.from({ length: starCount }).map((_, i) => {
       const arm = i % 2 === 0 ? 0 : Math.PI;
-      const distance = 0.3 + Math.random() * 3.8;
-      const angle = distance * 2.2 + arm;
-      const spreadX = (Math.random() - 0.5) * 0.25 * distance;
-      const spreadY = (Math.random() - 0.5) * 0.25 * distance;
-      const spreadZ = (Math.random() - 0.5) * 0.25 * distance;
+      const distance = 0.2 + Math.random() * 4.2;
+      // Logarithmic spiral formula
+      const angle = distance * 2.5 + arm;
+      const spreadX = (Math.random() - 0.5) * 0.22 * distance;
+      const spreadY = (Math.random() - 0.5) * 0.22 * distance;
+      const spreadZ = (Math.random() - 0.5) * 0.18 * distance;
       
-      const speed = 0.15 + Math.random() * 0.25;
+      const speed = 0.12 + Math.random() * 0.2;
       const color = particleColors[i % particleColors.length];
 
       return {
@@ -1298,41 +1591,48 @@ function GalaxyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
     const progress = smoothProgressRef.current;
 
     if (groupRef.current) {
-      const scrollSpin = progress * Math.PI * 1.5;
-      const timeSpin = state.clock.getElapsedTime() * 0.12;
+      const scrollSpin = progress * Math.PI * 1.8;
+      const timeSpin = state.clock.getElapsedTime() * 0.15;
       groupRef.current.rotation.z = timeSpin + scrollSpin;
       
       // Dynamic camera parallax tilt
       groupRef.current.rotation.x = 0.55 + pointer.y * 0.18;
       groupRef.current.rotation.y = pointer.x * 0.18;
+
+      // Pulse the central scale slightly based on scroll speed
+      const pulse = 1.0 + scrollSpeedRef.current * 0.8;
+      groupRef.current.scale.set(scale * pulse, scale * pulse, scale * pulse);
     }
   });
 
-  const progress = smoothProgressRef.current;
   const coreColor = theme === "dark" ? "#00ffcc" : "#FF3E00";
 
   return (
     <group ref={groupRef} scale={[scale, scale, scale]} position={[0, 0, -3.2]}>
       {/* Central Supermassive Star Core */}
       <mesh>
-        <sphereGeometry args={[0.22, 16, 16]} />
+        <sphereGeometry args={[0.26, 16, 16]} />
         <meshBasicMaterial color={coreColor} />
       </mesh>
       {/* Outer core glow ring */}
       <mesh>
-        <ringGeometry args={[0.25, 0.32, 32]} />
+        <ringGeometry args={[0.28, 0.38, 32]} />
         <meshBasicMaterial color={coreColor} transparent opacity={0.4} />
       </mesh>
 
       {/* Galaxy Dust Belt / Orbital Rings */}
       <group rotation={[Math.PI / 4, 0, 0]}>
         <mesh>
-          <ringGeometry args={[2.0, 2.05, 64]} />
-          <meshBasicMaterial color={coreColor} transparent opacity={0.22} />
+          <ringGeometry args={[2.0, 2.08, 64]} />
+          <meshBasicMaterial color={coreColor} transparent opacity={0.25} />
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[2.8, 2.86, 64]} />
-          <meshBasicMaterial color={coreColor} transparent opacity={0.15} />
+          <ringGeometry args={[2.8, 2.88, 64]} />
+          <meshBasicMaterial color={coreColor} transparent opacity={0.18} />
+        </mesh>
+        <mesh rotation={[Math.PI / 3, Math.PI / 4, 0]}>
+          <ringGeometry args={[3.4, 3.46, 64]} />
+          <meshBasicMaterial color={theme === "dark" ? "#9333ea" : "#FF3E00"} transparent opacity={0.12} />
         </mesh>
       </group>
 
@@ -1341,8 +1641,8 @@ function GalaxyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProps) {
         return (
           <group key={idx} position={[star.x, star.y, star.z]}>
             <mesh>
-              <sphereGeometry args={[0.024, 6, 6]} />
-              <meshBasicMaterial color={star.color} transparent opacity={0.7} />
+              <sphereGeometry args={[0.026, 6, 6]} />
+              <meshBasicMaterial color={star.color} transparent opacity={0.75} />
             </mesh>
           </group>
         );
