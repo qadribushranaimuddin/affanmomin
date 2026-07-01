@@ -338,6 +338,46 @@ export default function PressroomSimulator() {
                 />
               </div>
             </div>
+
+            {/* Halftone Microscope inspect card */}
+            <div className="w-full max-w-sm h-36 border border-white/5 bg-[#161616] rounded-lg overflow-hidden flex flex-col justify-center items-center select-none relative group cursor-zoom-in">
+              <span className="absolute top-2 left-2 font-mono text-[8px] text-[#A3A3A3] uppercase z-10 font-bold bg-black/60 px-1.5 py-0.5">// 400x Halftone Microscope Rosette</span>
+              
+              {/* Halftone background */}
+              <div className="w-full h-full flex items-center justify-center relative bg-white">
+                <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <pattern id="cyan-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(15)">
+                      <circle cx="6" cy="6" r={Math.max(0.5, (cyanKey / 100) * 4.5)} fill="#00FFFF" opacity="0.8" />
+                    </pattern>
+                    <pattern id="magenta-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(75)">
+                      <circle cx="6" cy="6" r={Math.max(0.5, (magentaKey / 100) * 4.5)} fill="#FF00FF" opacity="0.8" />
+                    </pattern>
+                    <pattern id="yellow-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
+                      <circle cx="6" cy="6" r={Math.max(0.5, (yellowKey / 100) * 4.5)} fill="#FFFF00" opacity="0.8" />
+                    </pattern>
+                    <pattern id="black-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                      <circle cx="6" cy="6" r={Math.max(0.5, (keyBlackKey / 100) * 4.5)} fill="#111111" opacity="0.85" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#yellow-dots)" />
+                  <rect width="100%" height="100%" fill="url(#cyan-dots)" />
+                  <rect width="100%" height="100%" fill="url(#magenta-dots)" />
+                  <rect width="100%" height="100%" fill="url(#black-dots)" />
+                </svg>
+
+                {/* Floating Pocket Loupe Magnifier Circle */}
+                <div className="absolute w-24 h-24 rounded-full border-4 border-slate-700 bg-white shadow-2xl flex items-center justify-center overflow-hidden pointer-events-none scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-200 z-20">
+                  <svg className="absolute w-full h-full" style={{ transform: "scale(2.5)" }}>
+                    <rect width="100%" height="100%" fill="url(#yellow-dots)" />
+                    <rect width="100%" height="100%" fill="url(#cyan-dots)" />
+                    <rect width="100%" height="100%" fill="url(#magenta-dots)" />
+                    <rect width="100%" height="100%" fill="url(#black-dots)" />
+                  </svg>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Telemetry Diagnostics Grid */}
