@@ -261,7 +261,7 @@ export default function Navbar({
                   <div className="flex items-center justify-between border-b border-card-border/40 pb-2">
                     <span className="text-[9px] font-bold text-brand-muted uppercase">Theme</span>
                     <button
-                      onClick={onToggleTheme}
+                      onClick={() => { onToggleTheme(); setSettingsOpen(false); }}
                       className="cursor-pointer px-2 py-1 border border-card-border bg-card-bg/20 hover:border-[#FF3E00] hover:text-[#FF3E00] text-[8px] rounded uppercase font-bold transition-colors"
                     >
                       {theme === "dark" ? "Night Mode 🌙" : "Day Mode ☀️"}
@@ -272,7 +272,7 @@ export default function Navbar({
                   <div className="flex items-center justify-between border-b border-card-border/40 pb-2">
                     <span className="text-[9px] font-bold text-brand-muted uppercase">3D Background</span>
                     <button
-                      onClick={onToggleThreeD}
+                      onClick={() => { onToggleThreeD(); setSettingsOpen(false); }}
                       className={`cursor-pointer px-2.5 py-1 border text-[8px] rounded uppercase font-bold transition-colors ${
                         threeDStyle !== "off"
                           ? "bg-[#FF3E00] text-black border-[#FF3E00] font-black"
@@ -301,7 +301,7 @@ export default function Navbar({
                           return (
                             <button
                               key={style}
-                              onClick={() => onChangeThreeDStyle(style)}
+                              onClick={() => { onChangeThreeDStyle(style); setSettingsOpen(false); }}
                               className={`cursor-pointer px-1.5 py-1 text-center text-[7.5px] font-bold uppercase rounded-sm border transition-all ${
                                 isActive
                                   ? "text-black bg-[#FF3E00] border-[#FF3E00] font-black"
@@ -412,7 +412,7 @@ export default function Navbar({
 
               {/* Mobile Theme Toggle Button */}
               <button
-                onClick={onToggleTheme}
+                onClick={() => { onToggleTheme(); setMobileMenuOpen(false); }}
                 className="flex items-center justify-between bg-card-bg/25 backdrop-blur-md border border-card-border text-brand-text font-mono font-bold uppercase tracking-wider px-4 py-3 mt-2 text-center rounded-sm shadow-sm cursor-pointer"
               >
                 <span>{theme === "dark" ? "Switch to Day Mode" : "Switch to Night Mode"}</span>
@@ -421,7 +421,7 @@ export default function Navbar({
 
               {/* Mobile 3D Toggle Button */}
               <button
-                onClick={onToggleThreeD}
+                onClick={() => { onToggleThreeD(); setMobileMenuOpen(false); }}
                 className="flex items-center justify-between bg-card-bg/25 backdrop-blur-md border border-card-border text-brand-text font-mono font-bold uppercase tracking-wider px-4 py-3 mt-2 text-center rounded-sm shadow-sm cursor-pointer"
               >
                 <span>3D Backgrounds</span>
@@ -451,7 +451,7 @@ export default function Navbar({
                     return (
                       <button
                         key={style}
-                        onClick={() => onChangeThreeDStyle(style)}
+                        onClick={() => { onChangeThreeDStyle(style); setMobileMenuOpen(false); }}
                         className={`cursor-pointer px-3 py-2 rounded-sm text-[9px] font-mono uppercase tracking-wider text-center transition-colors ${
                           isActive 
                             ? "text-black bg-[#FF3E00] font-black" 

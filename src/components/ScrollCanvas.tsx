@@ -761,30 +761,30 @@ function TypographyScene({ scrollProgressRef, scrollSpeedRef, theme }: SceneProp
       {/* Splitting individual letters to simulate typography coordinate collapse */}
       <group position={[0, 1.2, 0]}>
         <group position={[-0.9 + drift, 0, 0]} rotation={[0, drift * 0.5, 0]}>
-          <Text fontSize={0.65} color={textColor} font="/Fonts/CourierPrime-Regular.ttf">M</Text>
+          <Text fontSize={0.65} color={textColor}>M</Text>
         </group>
         <group position={[-0.3, drift, 0]}>
-          <Text fontSize={0.65} color={textColor} font="/Fonts/CourierPrime-Regular.ttf">O</Text>
+          <Text fontSize={0.65} color={textColor}>O</Text>
         </group>
         <group position={[0.3, -drift, 0]}>
-          <Text fontSize={0.65} color={textColor} font="/Fonts/CourierPrime-Regular.ttf">M</Text>
+          <Text fontSize={0.65} color={textColor}>M</Text>
         </group>
         <group position={[0.9 - drift, 0, 0]} rotation={[0, -drift * 0.5, 0]}>
-          <Text fontSize={0.65} color={textColor} font="/Fonts/CourierPrime-Regular.ttf">I</Text>
+          <Text fontSize={0.65} color={textColor}>I</Text>
         </group>
         <group position={[1.4, 0, -drift * 0.8]}>
-          <Text fontSize={0.65} color={textColor} font="/Fonts/CourierPrime-Regular.ttf">N</Text>
+          <Text fontSize={0.65} color={textColor}>N</Text>
         </group>
       </group>
 
       <group position={[-0.8, 0, -1]}>
-        <Text fontSize={0.55} color="#FF3E00" font="/Fonts/CourierPrime-Regular.ttf">
+        <Text fontSize={0.55} color="#FF3E00">
           DESIGN
         </Text>
       </group>
 
       <group position={[0.8, -1.2, -2]}>
-        <Text fontSize={0.55} color={theme === "dark" ? "#00ffcc" : "#0d9488"} font="/Fonts/CourierPrime-Regular.ttf">
+        <Text fontSize={0.55} color={theme === "dark" ? "#00ffcc" : "#0d9488"}>
           DEVELOP
         </Text>
       </group>
