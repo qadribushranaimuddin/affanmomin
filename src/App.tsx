@@ -34,6 +34,7 @@ import ContactHub from './components/ContactHub';
 import MarginCalibrationStamps from './components/MarginCalibrationStamps';
 import ParallaxGraphic from './components/ParallaxGraphic';
 import InteractiveLab from './components/InteractiveLab';
+import ScrollCanvas from './components/ScrollCanvas';
 
 interface TiltCardProps {
   children: React.ReactNode;
@@ -949,6 +950,7 @@ export default function App() {
         </>
       )}
       <Analytics />
+      <ScrollCanvas />
     </div>
   );
 }
