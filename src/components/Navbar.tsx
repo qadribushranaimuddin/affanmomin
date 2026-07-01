@@ -368,7 +368,7 @@ export default function Navbar({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ type: "spring", stiffness: 220, damping: 25 }}
-            className="lg:hidden absolute top-full left-0 w-full mobile-menu-bg border-b border-card-border py-6 px-6 shadow-2xl z-40 overflow-hidden"
+            className="lg:hidden absolute top-full left-0 w-full mobile-menu-bg border-b border-card-border py-6 px-6 shadow-2xl z-40 max-h-[calc(100vh-6rem)] overflow-y-auto overscroll-contain"
           >
             <div className="flex flex-col gap-3 font-mono text-xs uppercase tracking-wider">
               {navItems.map((item) => (
