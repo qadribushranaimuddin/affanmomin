@@ -232,6 +232,7 @@ export default function PressroomSimulator() {
                   <span className="font-mono text-[8.5px] w-12 text-right">
                     {keyBlackKey > targetK + 4 ? "▼ Reduce" : keyBlackKey < targetK - 4 ? "▲ Raise" : "✓ Align"}
                   </span>
+                </div>
               </div>
             </div>
 
